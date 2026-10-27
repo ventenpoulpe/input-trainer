@@ -1,0 +1,210 @@
+[gd_scene load_steps=6 format=3 uid="uid://dnr52vomblld0"]
+
+[ext_resource type="Script" uid="uid://yb5yw8wfo61i" path="res://main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://bh3ksq3wphbcf" path="res://ui/device_selector.gd" id="2_device"]
+[ext_resource type="PackedScene" path="res://ui/settings_menu.tscn" id="3_settings"]
+[ext_resource type="Script" uid="uid://dyvb355x4ec0n" path="res://gameplay/gameplay_controller.gd" id="4_gameplay"]
+[ext_resource type="Script" uid="uid://bhnxsyqf64bei" path="res://ui/highway.gd" id="5_highway"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+
+[node name="Gameplay" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("4_gameplay")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.07, 0.1, 1)
+
+[node name="Layout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="TopBar" type="PanelContainer" parent="Layout"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Layout/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="Toolbar" type="HBoxContainer" parent="Layout/TopBar/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LoadXmlButton" type="MenuButton" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "LOAD XML ▾"
+flat = false
+
+[node name="RecordButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+focus_mode = 0
+text = "RECORD (START/STOP)"
+
+[node name="SaveXmlButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "SAVE XML"
+
+[node name="PlayButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+focus_mode = 0
+text = "PLAY (START/STOP)"
+
+[node name="Separator" type="VSeparator" parent="Layout/TopBar/Margin/Toolbar"]
+layout_mode = 2
+
+[node name="DeviceLabel" type="Label" parent="Layout/TopBar/Margin/Toolbar"]
+layout_mode = 2
+text = "Active Device:"
+
+[node name="DeviceSelector" type="OptionButton" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+focus_mode = 0
+script = ExtResource("2_device")
+
+[node name="SettingsButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "SETTINGS / REBIND"
+
+[node name="Spacer" type="Control" parent="Layout/TopBar/Margin/Toolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BestScoreLabel" type="Label" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "BEST MATCH SCORE: --"
+
+[node name="Title" type="Label" parent="Layout"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "INPUT TRAINER: VF MODE"
+horizontal_alignment = 1
+
+[node name="BodyMargin" type="MarginContainer" parent="Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="Body" type="HBoxContainer" parent="Layout/BodyMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Stats" type="VBoxContainer" parent="Layout/BodyMargin/Body"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="MatchLabel" type="Label" parent="Layout/BodyMargin/Body/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "MATCH: --"
+
+[node name="BestLabel" type="Label" parent="Layout/BodyMargin/Body/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "BEST: --"
+
+[node name="ProgressLabel" type="Label" parent="Layout/BodyMargin/Body/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CURRENT LOOP PROGRESS: 0%"
+
+[node name="LoopLabel" type="Label" parent="Layout/BodyMargin/Body/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.68, 0.8, 1)
+text = "LOOP: -"
+
+[node name="CountsLabel" type="Label" parent="Layout/BodyMargin/Body/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.68, 0.8, 1)
+
+[node name="StatsSpacer" type="Control" parent="Layout/BodyMargin/Body/Stats"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StatusLabel" type="Label" parent="Layout/BodyMargin/Body/Stats"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.68, 0.8, 1)
+autowrap_mode = 3
+
+[node name="Highway" type="Control" parent="Layout/BodyMargin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+script = ExtResource("5_highway")
+
+[node name="Info" type="VBoxContainer" parent="Layout/BodyMargin/Body"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="FileLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "FILE: -"
+text_overrun_behavior = 3
+
+[node name="TimeLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "TIME: 0.00 s"
+
+[node name="FrameLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "FRAME: 0 f"
+
+[node name="RecordingLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 24
+text = "RECORDING..."
+
+[node name="SettingsMenu" parent="." instance=ExtResource("3_settings")]
+unique_name_in_owner = true
+layout_mode = 1
