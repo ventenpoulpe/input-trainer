@@ -2,7 +2,8 @@ class_name TimingJudge
 extends RefCounted
 ## Turns a sequence into per-lane targets and judges presses against them.
 ##
-## Lanes: direction, G, P, K. A direction target is created when an input's
+## Lanes: 0 is the direction lane, then one lane per button of the sequence's
+## input mode, in InputMode order (VF: G, P, K). A direction target is created when an input's
 ## direction differs from the previous input's (NEUTRAL is never a target, but
 ## it still counts as "different", so FORWARD, NEUTRAL, FORWARD = 2 targets).
 ## A button target is created for each button pressed in an input.
@@ -15,7 +16,6 @@ extends RefCounted
 ## mashing doesn't score; extra direction changes don't, since moving between
 ## directions naturally passes through others.
 
-enum Lane { DIRECTION, GUARD, PUNCH, KICK }
 enum Rating { PERFECT, GREAT, GOOD, MISS }
 enum HoldResult { NONE = -1, OK, DROPPED }
 
@@ -29,11 +29,11 @@ const HOLD_RELEASE_GRACE := GOOD_WINDOW
 
 const RATING_POINTS := {Rating.PERFECT: 1.0, Rating.GREAT: 0.75, Rating.GOOD: 0.5, Rating.MISS: 0.0}
 const RATING_TEXT := {Rating.PERFECT: "PERFECT!", Rating.GREAT: "GREAT", Rating.GOOD: "GOOD", Rating.MISS: "MISS"}
-const BUTTON_LANES := {"G": Lane.GUARD, "P": Lane.PUNCH, "K": Lane.KICK}
+const DIRECTION_LANE := 0
 
 
 class Target:
-	var lane: Lane
+	var lane: int
 	var time: float
 	## Hold length in seconds; 0 for a normal input.
 	var hold := 0.0
@@ -47,7 +47,7 @@ class Target:
 	var holding := false
 	var hold_result := HoldResult.NONE
 
-	func _init(p_lane: Lane, p_time: float, p_hold := 0.0, p_direction := "") -> void:
+	func _init(p_lane: int, p_time: float, p_hold := 0.0, p_direction := "") -> void:
 		lane = p_lane
 		time = p_time
 		hold = p_hold
@@ -75,28 +75,38 @@ var holds_ok := 0
 var holds_dropped := 0
 
 var _holding: Array[Target] = []
+## Button id -> lane.
+var _button_lanes := {}
 
 
 func _init(sequence: InputSequence) -> void:
-	targets = build_targets(sequence)
+	var ids := InputMode.button_ids(sequence.mode)
+	for i in ids.size():
+		_button_lanes[ids[i]] = i + 1
+	targets = build_targets(sequence, _button_lanes)
 	end_time = sequence.duration
 	for target in targets:
 		end_time = maxf(end_time, target.end_time() + GOOD_WINDOW)
 	reset()
 
 
-static func build_targets(sequence: InputSequence) -> Array[Target]:
+static func build_targets(sequence: InputSequence, button_lanes: Dictionary) -> Array[Target]:
 	var list: Array[Target] = []
 	var previous_direction := SequenceInput.NEUTRAL
 	for input in sequence.inputs:
 		if input.direction != previous_direction and input.direction != SequenceInput.NEUTRAL:
-			list.append(Target.new(Lane.DIRECTION, input.timestamp, input.direction_hold, input.direction))
+			list.append(Target.new(DIRECTION_LANE, input.timestamp, input.direction_hold, input.direction))
 		previous_direction = input.direction
 		for button in input.buttons:
-			if BUTTON_LANES.has(button):
-				list.append(Target.new(BUTTON_LANES[button], input.timestamp, input.get_button_hold(button)))
+			if button_lanes.has(button):
+				list.append(Target.new(button_lanes[button], input.timestamp, input.get_button_hold(button)))
 	list.sort_custom(func(a: Target, b: Target) -> bool: return a.time < b.time)
 	return list
+
+
+## The lane of a button id, or -1 if the sequence's mode doesn't have it.
+func lane_for_button(button: String) -> int:
+	return _button_lanes.get(button, -1)
 
 
 ## Number of scored items: every target, plus one per hold for its release.
@@ -127,7 +137,7 @@ func reset() -> void:
 
 ## A new direction was entered at `time`. Returns the target it hit, or null.
 func press_direction(direction: String, time: float) -> Target:
-	var target := _closest_open_target(Lane.DIRECTION, time, direction)
+	var target := _closest_open_target(DIRECTION_LANE, time, direction)
 	if target:
 		_judge(target, time - target.time)
 	return target
@@ -135,7 +145,7 @@ func press_direction(direction: String, time: float) -> Target:
 
 ## A button lane was pressed at `time`. Returns the target it hit, or null
 ## (an extra press, which lowers the match rate).
-func press_button(lane: Lane, time: float) -> Target:
+func press_button(lane: int, time: float) -> Target:
 	var target := _closest_open_target(lane, time)
 	if target:
 		_judge(target, time - target.time)
@@ -146,7 +156,7 @@ func press_button(lane: Lane, time: float) -> Target:
 
 ## The input of `lane` was let go at `time`. Returns the hold it finished
 ## (check its hold_result), or null if nothing was being held.
-func release(lane: Lane, time: float) -> Target:
+func release(lane: int, time: float) -> Target:
 	for target in _holding:
 		if target.lane == lane:
 			_finish_hold(target, HoldResult.OK if time >= target.end_time() - HOLD_RELEASE_GRACE else HoldResult.DROPPED)
@@ -208,7 +218,7 @@ static func rating_for_offset(offset: float) -> Rating:
 	return Rating.MISS
 
 
-func _closest_open_target(lane: Lane, time: float, direction := "") -> Target:
+func _closest_open_target(lane: int, time: float, direction := "") -> Target:
 	var best: Target = null
 	for target in targets:
 		if target.time > time + GOOD_WINDOW:

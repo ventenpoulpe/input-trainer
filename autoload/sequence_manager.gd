@@ -3,7 +3,8 @@ extends Node
 ##
 ## Record flow: toggle_recording() arms the recorder; the first game input
 ## starts the clock; toggling again stops it and makes the recording the
-## current sequence (unsaved until save_current() is called).
+## current sequence (unsaved until save_current() is called). A recording
+## uses the input mode that was active when it was armed.
 
 signal recording_state_changed(state: SequenceRecorder.State)
 ## The current sequence or its file changed (loaded, recorded or saved).
@@ -12,7 +13,6 @@ signal sequence_changed
 signal sequence_replaced
 
 const DEFAULT_AUTHOR := "Player1"
-const BUTTON_ACTIONS := {"P": &"vf_punch", "K": &"vf_kick", "G": &"vf_guard"}
 
 ## VF notation is relative to facing: true = player 1 side (facing right).
 ## Comes from the "facing_right" preference.
@@ -28,6 +28,13 @@ var _recorder := SequenceRecorder.new()
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(sequences_dir())
+	InputConfig.mode_changed.connect(_on_mode_changed)
+
+
+## True when the current sequence was made for another input mode than the
+## selected one. It can't be played until the user fixes that.
+func is_mode_mismatch() -> bool:
+	return current_sequence != null and current_sequence.mode != InputConfig.active_mode
 
 
 ## res://Sequences/ when run from the editor. Exported games can't write to
@@ -87,7 +94,7 @@ func toggle_recording() -> void:
 
 
 func start_recording() -> void:
-	_recorder.arm(read_direction(), read_held_buttons())
+	_recorder.arm(read_direction(), read_held_buttons(), InputConfig.active_mode)
 	recording_state_changed.emit(_recorder.state)
 
 
@@ -110,7 +117,7 @@ func cancel_recording() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not is_recording_active() or InputConfig.is_capturing or not _is_game_event(event):
+	if not is_recording_active() or InputConfig.is_capturing or not InputConfig.is_game_event(event):
 		return
 	# Input's action state is already updated for this event, so read it back.
 	var before := _recorder.state
@@ -119,30 +126,29 @@ func _input(event: InputEvent) -> void:
 		recording_state_changed.emit(_recorder.state)
 
 
-static func _is_game_event(event: InputEvent) -> bool:
-	for action in InputConfig.GAME_ACTIONS:
-		if event.is_action(action):
-			return true
-	return false
-
-
 ## The direction currently held, in VF notation.
 func read_direction() -> String:
 	return SequenceInput.direction_from_state(
-		Input.is_action_pressed(&"vf_up"),
-		Input.is_action_pressed(&"vf_down"),
-		Input.is_action_pressed(&"vf_left"),
-		Input.is_action_pressed(&"vf_right"),
+		Input.is_action_pressed(&"dir_up"),
+		Input.is_action_pressed(&"dir_down"),
+		Input.is_action_pressed(&"dir_left"),
+		Input.is_action_pressed(&"dir_right"),
 		facing_right,
 	)
 
 
-## The buttons currently held ("P", "K", "G").
+## The active mode's buttons currently held, in lane order. A held button
+## combination counts as holding each of its buttons.
 func read_held_buttons() -> PackedStringArray:
+	var mode := InputConfig.active_mode
+	var from_combos := PackedStringArray()
+	for combo: Dictionary in InputMode.combos(mode):
+		if Input.is_action_pressed(combo.action):
+			from_combos.append_array(PackedStringArray(combo.buttons))
 	var held := PackedStringArray()
-	for button: String in BUTTON_ACTIONS:
-		if Input.is_action_pressed(BUTTON_ACTIONS[button]):
-			held.append(button)
+	for button: Dictionary in InputMode.buttons(mode):
+		if Input.is_action_pressed(button.action) or from_combos.has(button.id):
+			held.append(button.id)
 	return held
 
 
@@ -174,6 +180,14 @@ func save_current(file_name: String, author: String) -> String:
 	current_path = path
 	sequence_changed.emit()
 	return ""
+
+
+## Changing mode ends a recording: it is kept if it started, cancelled if armed.
+func _on_mode_changed(_mode: String) -> void:
+	if get_recording_state() == SequenceRecorder.State.RECORDING:
+		stop_recording()
+	else:
+		cancel_recording()
 
 
 func _set_current(sequence: InputSequence, path: String) -> void:

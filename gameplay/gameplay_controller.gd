@@ -5,6 +5,7 @@ extends Node
 ##
 ## The clock is "sequence time": 0 is the first input. Each loop starts at
 ## -lead_time so the first inputs have time to scroll down to the hit line.
+## A sequence only plays in its own input mode; changing mode stops the loop.
 
 signal state_changed(state: State)
 signal loop_started(loop_number: int)
@@ -12,7 +13,7 @@ signal input_judged(target: TimingJudge.Target)
 ## A hold input was released or held to its end; see target.hold_result.
 signal hold_finished(target: TimingJudge.Target)
 ## A button press that didn't match any expected input.
-signal extra_press(lane: TimingJudge.Lane)
+signal extra_press(lane: int)
 signal loop_finished(rate: float, is_new_best: bool)
 ## -1 means no best score yet.
 signal best_score_changed(best: float)
@@ -40,6 +41,7 @@ var _last_buttons := PackedStringArray()
 
 func _ready() -> void:
 	SequenceManager.sequence_replaced.connect(_on_sequence_replaced)
+	InputConfig.mode_changed.connect(func(_mode: String) -> void: stop())
 	SequenceManager.recording_state_changed.connect(_on_recording_state_changed)
 
 
@@ -53,6 +55,10 @@ func start() -> String:
 	var current := SequenceManager.current_sequence
 	if current == null:
 		return "Load or record a sequence first."
+	if SequenceManager.is_mode_mismatch():
+		return "This sequence is for %s. Select that input mode or load a %s sequence." % [
+			InputMode.title(current.mode), InputMode.title(InputConfig.active_mode),
+		]
 	var new_judge := TimingJudge.new(current)
 	if new_judge.targets.is_empty():
 		return "This sequence has no inputs to play."
@@ -111,7 +117,7 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if state != State.PLAYING or not _is_game_event(event):
+	if state != State.PLAYING or not InputConfig.is_game_event(event):
 		return
 	var time := _time_at(Time.get_ticks_usec())
 
@@ -119,7 +125,7 @@ func _input(event: InputEvent) -> void:
 	if direction != _last_direction:
 		_last_direction = direction
 		# Leaving a direction ends its hold before the new one is judged.
-		_emit_release(judge.release(TimingJudge.Lane.DIRECTION, time))
+		_emit_release(judge.release(TimingJudge.DIRECTION_LANE, time))
 		if direction != SequenceInput.NEUTRAL:
 			var hit := judge.press_direction(direction, time)
 			if hit:
@@ -128,11 +134,13 @@ func _input(event: InputEvent) -> void:
 	var held := SequenceManager.read_held_buttons()
 	for button in _last_buttons:
 		if not held.has(button):
-			_emit_release(judge.release(TimingJudge.BUTTON_LANES[button], time))
+			_emit_release(judge.release(judge.lane_for_button(button), time))
 	for button in held:
 		if _last_buttons.has(button):
 			continue
-		var lane: TimingJudge.Lane = TimingJudge.BUTTON_LANES[button]
+		var lane := judge.lane_for_button(button)
+		if lane < 0:
+			continue
 		var hit := judge.press_button(lane, time)
 		if hit:
 			input_judged.emit(hit)
@@ -179,13 +187,6 @@ func _state_elapsed() -> float:
 
 func _time_at(usec: int) -> float:
 	return (usec - _loop_start_usec) / 1_000_000.0 - lead_time
-
-
-static func _is_game_event(event: InputEvent) -> bool:
-	for action in InputConfig.GAME_ACTIONS:
-		if event.is_action(action):
-			return true
-	return false
 
 
 func _reset_best() -> void:

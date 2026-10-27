@@ -1,8 +1,8 @@
-# Input Trainer - VF Mode
+# Input Trainer
 
-A rhythm-game style trainer for practicing **Virtua Fighter** execution.
+A rhythm-game style trainer for practicing fighting game execution, with input modes for **Virtua Fighter**, **Soul Calibur 2** and classic 6-button **Street Fighter**.
 
-Record a combo (or load one), then play it back Guitar Hero style: your inputs scroll down a 4-lane highway and you press them in time. Every press is judged to the frame, so you can see exactly how early or late you are and drill until it's consistent.
+Record a combo (or load one), then play it back Guitar Hero style: your inputs scroll down a highway and you press them in time. Every press is judged to the frame, so you can see exactly how early or late you are and drill until it's consistent.
 
 Built with **Godot 4.7**.
 
@@ -10,6 +10,8 @@ Built with **Godot 4.7**.
 
 ## Features
 
+- **Three input modes.** VF (G, P, K), SC2 (G, A, B, K) and SF (LP, LK, MP, MK, HP, HK), each with its own lanes, colors and bindings.
+- **Combination buttons.** Bind one button to several at once, like P+K in VF or HP+HK in SF.
 - **Record your own sequences.** Recording starts on your first press, so there's no dead time at the start. Diagonals, simultaneous buttons (like P+G) and held inputs are all captured.
 - **Frame-accurate judging.** Each input is rated **PERFECT**, **GREAT**, **GOOD** or **MISS**, and shows how many frames early or late you were (`-2f`, `+1f`).
 - **Hold inputs.** Directions or buttons held for 15+ frames become hold inputs, and you must keep them held to the end.
@@ -39,7 +41,7 @@ Requires Windows 10 or 11 and a reasonably recent graphics driver (the app uses 
 
 ### Your first practice session
 
-1. Click **LOAD XML ▾** and pick the included sample `VF5R-JEA-BNB-6K`.
+1. Check that **Mode** in the toolbar is set to **VF MODE** (the default), then click **LOAD XML ▾** and pick the included sample `VF5R-JEA-BNB-6K`.
 2. Press **Space** (keyboard) or **L3** (controller) to start.
 3. After a short countdown, hit each input as it crosses the line at the bottom of the track.
 4. Press **Space** / **L3** again to stop.
@@ -48,11 +50,23 @@ Requires Windows 10 or 11 and a reasonably recent graphics driver (the app uses 
 
 ## How to use it
 
+### Choosing an input mode
+
+Pick your game in the **Mode** dropdown in the toolbar. The highway, the title and the buttons you use change right away, and your choice is remembered.
+
+| Mode | Game | Buttons |
+|---|---|---|
+| **VF MODE** | Virtua Fighter | **G** Guard, **P** Punch, **K** Kick |
+| **SC2 MODE** | Soul Calibur 2 | **G** Guard, **A** Horizontal, **B** Vertical, **K** Kick |
+| **SF MODE** | Street Fighter (classic) | **LP**, **LK**, **MP**, **MK**, **HP**, **HK** |
+
+Each sequence file remembers the mode it was recorded in. If you load a sequence made for another mode, an orange warning appears under the timers on the right, and the sequence can't be played until you either switch to the matching mode or load a sequence for the current one.
+
 ### Recording a combo
 
 1. Press **Backspace** (keyboard) or **R3** (controller), or click **RECORD**.
    The screen shows **ARMED**: nothing is recorded yet.
-2. Perform your combo. **Your first press is time zero.**
+2. Perform your combo. **Your first press is time zero.** The recording uses the current mode.
 3. Press **Backspace** / **R3** again to stop.
 4. Click **SAVE XML**, give it a name, and it's saved to the `Sequences` folder.
 
@@ -68,15 +82,16 @@ Press **Space** / **L3** or click **PLAY**. A 1-second countdown appears, then i
 <img width="1591" height="886" alt="image" src="https://github.com/user-attachments/assets/14517430-d480-4f41-8d38-9268d0e0e42b" />
 
 
-| Lane | Color | What to press |
-|---|---|---|
-| Direction | White, with arrows | The direction shown by the arrow |
-| **G** — Guard | Green | Guard |
-| **P** — Punch | Blue | Punch |
-| **K** — Kick | Orange | Kick |
+The first lane is always the **direction** lane: press the direction shown by the arrow. The other lanes are your mode's buttons, from left to right:
+
+| Mode | Lanes and colors |
+|---|---|
+| VF | **G** green, **P** blue, **K** red |
+| SC2 | **G** green, **A** white, **B** white, **K** red |
+| SF | **LP**, **LK** light blue, **MP**, **MK** yellow, **HP**, **HK** red |
 
 - **Long bars** behind an input are **holds**: keep the input down until the bar ends.
-- The circles on the hit line light up with what you're currently holding, which is handy for checking your inputs.
+- The circles on the hit line light up with what you're currently holding, which is handy for checking your inputs. A combination button lights up all of its buttons.
 - **TIME** and **FRAME** (60 FPS) on the right show where you are in the sequence.
 
 ### Scoring
@@ -100,26 +115,63 @@ Your **best score** resets when you load or record a different sequence.
 
 All bindings can be changed in **SETTINGS / REBIND**.
 
+**All modes**
+
 | Action | Keyboard | Controller |
 |---|---|---|
 | Up | W | D-Pad Up / Left Stick |
 | Down | S | D-Pad Down / Left Stick |
 | Left | A | D-Pad Left / Left Stick |
 | Right | D | D-Pad Right / Left Stick |
-| Punch (P) | Y | X |
-| Kick (K) | U | Y |
-| Guard (G) | G | A |
 | Record start/stop | Backspace | R3 (Right Stick Click) |
 | Play start/stop | Space | L3 (Left Stick Click) |
+
+**VF MODE**
+
+| Action | Keyboard | Controller |
+|---|---|---|
+| Guard (G) | G | A |
+| Punch (P) | Y | X |
+| Kick (K) | U | Y |
+| P+K | I | RB |
+| K+G | J | RT |
+| G+P+K | H | B |
+
+**SC2 MODE**
+
+| Action | Keyboard | Controller |
+|---|---|---|
+| Guard (G) | G | A |
+| Horizontal (A) | Y | X |
+| Vertical (B) | U | Y |
+| Kick (K) | H | B |
+| A+B | I | RB |
+| A+G | T | LB |
+| B+K | J | RT |
+| G+B | K | LT |
+
+**SF MODE**
+
+| Action | Keyboard | Controller |
+|---|---|---|
+| Light Punch (LP) | Y | X |
+| Light Kick (LK) | H | A |
+| Medium Punch (MP) | U | Y |
+| Medium Kick (MK) | J | B |
+| Heavy Punch (HP) | I | RB |
+| Heavy Kick (HK) | K | RT |
+| MP+MK | G | LB |
+| HP+HK | L | LT |
 
 Controller buttons use Xbox names (A = bottom face button). The keyboard shortcuts for Record and Play always work, even when a controller is selected.
 
 ### Rebinding
 
-1. Open **SETTINGS / REBIND**.
+1. Select the mode you want to change in the **Mode** dropdown, then open **SETTINGS / REBIND**.
+   The menu shows the directions, that mode's buttons and combinations, and the shortcuts.
 2. Click a binding, then press the new key or button within 5 seconds (**Esc** cancels).
-3. If that input was already used by another action, the two swap.
-4. Click **Save** to keep your changes, **Cancel** to undo them, or **Reset** to restore the defaults.
+3. If that input was already used by another action in the same mode, the two swap. Different modes can use the same keys.
+4. Click **Save** to keep your changes, **Cancel** to undo them, or **Reset** to restore the defaults (for every mode).
 
 ### Other settings
 
@@ -147,7 +199,7 @@ The **LOAD XML ▾** menu lists every file in that folder, and also has **Browse
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
-<InputSequence name="Jean_Kujo_BnB01" author="Player1" duration="4.500">
+<InputSequence name="Jean_Kujo_BnB01" author="Player1" mode="VF" duration="4.500">
     <Input timestamp="0.000" frame="0">
         <Direction>FORWARD</Direction>
         <Buttons></Buttons>
@@ -155,17 +207,18 @@ The **LOAD XML ▾** menu lists every file in that folder, and also has **Browse
     <Input timestamp="0.300" frame="18">
         <Direction hold="0.400" holdFrames="24">DOWN_FORWARD</Direction>
         <Buttons>
-            <Button>P</Button>
             <Button hold="0.300" holdFrames="18">G</Button>
+            <Button>P</Button>
         </Buttons>
     </Input>
 </InputSequence>
 ```
 
+- **mode**: `VF`, `SC2` or `SF`. Files without it are read as VF.
 - **timestamp**: seconds from the first press. **frame**: the same time at 60 FPS.
 - **Direction**: what's held at that moment, in VF notation relative to facing:
   `NEUTRAL`, `UP`, `DOWN`, `FORWARD`, `BACK`, `UP_FORWARD`, `UP_BACK`, `DOWN_FORWARD`, `DOWN_BACK`.
-- **Buttons**: the buttons newly pressed at that moment (`P`, `K`, `G`).
+- **Buttons**: the buttons newly pressed at that moment, using the mode's button names (VF: `G`, `P`, `K`; SC2: `G`, `A`, `B`, `K`; SF: `LP`, `LK`, `MP`, `MK`, `HP`, `HK`). A combination is saved as its separate buttons.
 - **hold** (optional): how long the input is held, in seconds.
 
 Files using the older `<InputNote>` tag still load.
@@ -177,8 +230,8 @@ Files using the older `<InputNote>` tag still load.
 ```
 autoload/      Global services: settings, input bindings, sequence manager, sound effects
 gameplay/      Practice loop and timing judge (ratings and scoring)
-sequence/      Sequence data, recorder and XML reader/writer
-ui/            Highway, countdown, device selector, save dialog, settings menu
+sequence/      Input modes, sequence data, recorder and XML reader/writer
+ui/            Highway, countdown, mode and device selectors, save dialog, settings menu
 Sequences/     Sequence XML files
 main.tscn      Main screen
 export_presets.cfg  Godot export settings

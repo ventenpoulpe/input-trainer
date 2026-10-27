@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<InputSequence name="VF5R-JEA-BNB-6K" author="Momokwai" duration="2.018">
+<InputSequence name="VF5R-JEA-BNB-6K" author="Momokwai" mode="VF" duration="2.018">
     <Input timestamp="0.000" frame="0">
         <Direction>FORWARD</Direction>
         <Buttons></Buttons>

@@ -1,26 +1,23 @@
 class_name Highway
 extends Control
-## Draws the 4-lane perspective highway for a GameplayController: lanes,
+## Draws the perspective highway for a GameplayController: lanes,
 ## scrolling inputs and hold bars, the hit line with its receptors, and hit
 ## feedback (popup text, GPU spark particles, flashes).
 ##
 ## Everything is drawn in 2D with a simple perspective projection. Depth `u`
 ## runs from 0 at the hit line to 1 at the far end; negative is past the line.
+##
+## Lanes follow the selected input mode: the direction lane, then one lane per
+## action button (VF: 4 lanes, SC2: 5, SF: 7).
 
-const Lane := TimingJudge.Lane
+const DIRECTION_LANE := TimingJudge.DIRECTION_LANE
 const Rating := TimingJudge.Rating
 const HoldResult := TimingJudge.HoldResult
 const PlayState := GameplayController.State
 
-const LANE_COUNT := 4
-## Direction, G, P, K.
-const LANE_COLORS := [
-	Color(0.80, 0.85, 0.95),
-	Color(0.20, 0.85, 0.40),
-	Color(0.25, 0.55, 1.00),
-	Color(1.00, 0.45, 0.20),
-]
-const LANE_LETTERS := ["", "G", "P", "K"]
+const DIRECTION_COLOR := Color(0.80, 0.85, 0.95)
+## The track gets wider for modes with more than this many lanes.
+const BASE_LANE_COUNT := 4
 const RATING_COLORS := {
 	Rating.PERFECT: Color(1.0, 0.88, 0.3),
 	Rating.GREAT: Color(0.4, 1.0, 0.6),
@@ -58,17 +55,22 @@ const FLASH_TIME := 0.25
 
 var controller: GameplayController
 
+## Lanes of the selected mode; index 0 is the direction lane.
+var _lane_count := 1
+var _lane_colors: Array[Color] = [DIRECTION_COLOR]
+var _lane_ids := PackedStringArray([""])
 var _center_x := 0.0
 var _half_width := 0.0
 var _hit_y := 0.0
 var _horizon_y := 0.0
 var _bottom_u := -0.1
-## One-shot burst per lane on hits, and a continuous stream while holding.
+## One-shot burst per lane on hits, and a continuous stream while holding
+## (created for the widest mode, so switching modes needs no new nodes).
 var _burst_particles: Array[GPUParticles2D] = []
 var _hold_particles: Array[GPUParticles2D] = []
 var _flashes: Array[Dictionary] = []  # {lane, color, time_left}
 ## Latest popup per lane; a new one replaces it so they don't pile up.
-var _popups: Array[Label] = [null, null, null, null]
+var _popups: Array[Label] = []
 var _ring := CountdownRing.new()
 var _pause_text := ""
 
@@ -76,11 +78,28 @@ var _pause_text := ""
 func _ready() -> void:
 	clip_contents = true
 	var spark_texture := _make_spark_texture()
-	for lane in LANE_COUNT:
+	for lane in InputMode.max_lane_count():
 		_burst_particles.append(_make_particles(spark_texture, true))
 		_hold_particles.append(_make_particles(spark_texture, false))
+		_popups.append(null)
 	add_child(_ring)
 	_ring.hide()
+	InputConfig.mode_changed.connect(_setup_lanes)
+	_setup_lanes(InputConfig.active_mode)
+
+
+func _setup_lanes(mode: String) -> void:
+	_lane_colors = [DIRECTION_COLOR]
+	_lane_ids = PackedStringArray([""])
+	for button: Dictionary in InputMode.buttons(mode):
+		_lane_colors.append(button.color)
+		_lane_ids.append(button.id)
+	_lane_count = _lane_colors.size()
+	_flashes.clear()
+	for popup in _popups:
+		if is_instance_valid(popup):
+			popup.queue_free()
+	queue_redraw()
 
 
 func setup(p_controller: GameplayController) -> void:
@@ -97,9 +116,9 @@ func _process(delta: float) -> void:
 	_flashes = _flashes.filter(func(flash: Dictionary) -> bool: return flash.time_left > 0.0)
 
 	var playing := controller != null and controller.state == PlayState.PLAYING
-	for lane in LANE_COUNT:
+	for lane in _hold_particles.size():
 		var stream := _hold_particles[lane]
-		var holding := playing and controller.judge.is_holding(lane)
+		var holding := playing and lane < _lane_count and controller.judge.is_holding(lane)
 		if holding:
 			stream.position = _project(_lane_center(lane), 0.0)
 		if stream.emitting != holding:
@@ -117,7 +136,8 @@ func _process(delta: float) -> void:
 
 func _update_geometry() -> void:
 	_hit_y = size.y - BOTTOM_MARGIN
-	_half_width = minf(size.x * 0.48, (_hit_y - TOP_MARGIN) * 0.75)
+	var lane_factor := maxf(1.0, float(_lane_count) / BASE_LANE_COUNT)
+	_half_width = minf(size.x * 0.48, (_hit_y - TOP_MARGIN) * 0.75 * lane_factor)
 	_center_x = size.x / 2.0
 	_horizon_y = (TOP_MARGIN - _hit_y * FAR_SCALE) / (1.0 - FAR_SCALE)
 	# Depth at the bottom edge of the control.
@@ -139,16 +159,16 @@ func _quad(x0: float, x1: float, u0: float, u1: float) -> PackedVector2Array:
 	return PackedVector2Array([_project(x0, u0), _project(x1, u0), _project(x1, u1), _project(x0, u1)])
 
 
-static func _lane_edge(index: int) -> float:
-	return index * 2.0 / LANE_COUNT - 1.0
+func _lane_edge(index: int) -> float:
+	return index * 2.0 / _lane_count - 1.0
 
 
-static func _lane_center(lane: int) -> float:
-	return _lane_edge(lane) + 1.0 / LANE_COUNT
+func _lane_center(lane: int) -> float:
+	return _lane_edge(lane) + 1.0 / _lane_count
 
 
 func _receptor_radius() -> float:
-	return _half_width / LANE_COUNT * 0.42
+	return _half_width / _lane_count * 0.42
 
 
 ## Inputs fade in over the last part of the track.
@@ -173,10 +193,10 @@ func _draw() -> void:
 
 func _draw_track() -> void:
 	draw_colored_polygon(_quad(-1.0, 1.0, _bottom_u, 1.0), Color(0.09, 0.1, 0.14))
-	for lane in LANE_COUNT:
-		draw_colored_polygon(_quad(_lane_edge(lane), _lane_edge(lane + 1), _bottom_u, 1.0), Color(LANE_COLORS[lane], 0.05))
-	for i in LANE_COUNT + 1:
-		var outer := i == 0 or i == LANE_COUNT
+	for lane in _lane_count:
+		draw_colored_polygon(_quad(_lane_edge(lane), _lane_edge(lane + 1), _bottom_u, 1.0), Color(_lane_colors[lane], 0.05))
+	for i in _lane_count + 1:
+		var outer := i == 0 or i == _lane_count
 		draw_line(_project(_lane_edge(i), _bottom_u), _project(_lane_edge(i), 1.0), Color(1, 1, 1, 0.3 if outer else 0.12), 3.0 if outer else 1.5, true)
 
 	# Moving grid lines (every 0.25 s, brighter every second) show the speed.
@@ -209,7 +229,7 @@ func _draw_inputs(time: float) -> void:
 
 
 func _draw_hold_bar(target: TimingJudge.Target, u: float, tail_u: float) -> void:
-	var color: Color = LANE_COLORS[target.lane]
+	var color: Color = _lane_colors[target.lane]
 	var start_u := u
 	if target.holding:
 		# Being held: the bar is eaten up at the hit line and glows.
@@ -225,7 +245,7 @@ func _draw_hold_bar(target: TimingJudge.Target, u: float, tail_u: float) -> void
 	var u1 := minf(tail_u, 1.0)
 	if u1 <= u0:
 		return
-	var half := HOLD_BAR_WIDTH / LANE_COUNT
+	var half := HOLD_BAR_WIDTH / _lane_count
 	var center := _lane_center(target.lane)
 	var points := _quad(center - half, center + half, u0, u1)
 	var near := Color(color, color.a * _far_fade(u0))
@@ -238,7 +258,7 @@ func _draw_hold_bar(target: TimingJudge.Target, u: float, tail_u: float) -> void
 
 func _draw_input(target: TimingJudge.Target, u: float) -> void:
 	var missed := target.rating == Rating.MISS
-	var color: Color = MISSED_COLOR if missed else LANE_COLORS[target.lane]
+	var color: Color = MISSED_COLOR if missed else _lane_colors[target.lane]
 	color.a = _far_fade(u) * (0.6 if missed else 1.0)
 
 	var pad := 0.05
@@ -246,7 +266,7 @@ func _draw_input(target: TimingJudge.Target, u: float) -> void:
 	var x1 := _lane_edge(target.lane + 1) - pad
 	var quad := _quad(x0, x1, u - TILE_DEPTH / 2.0, u + TILE_DEPTH / 2.0)
 
-	if target.lane == Lane.DIRECTION:
+	if target.lane == DIRECTION_LANE:
 		draw_colored_polygon(quad, Color(0.14, 0.15, 0.2, color.a))
 		var outline := quad.duplicate()
 		outline.append(quad[0])
@@ -281,23 +301,26 @@ func _draw_receptors() -> void:
 	var radius := _receptor_radius()
 	var font := get_theme_default_font()
 	var playing := controller != null and controller.state == PlayState.PLAYING
-	for lane in LANE_COUNT:
+	for lane in _lane_count:
 		var center := _project(_lane_center(lane), 0.0)
-		var color: Color = LANE_COLORS[lane]
-		var pressed := direction != SequenceInput.NEUTRAL if lane == Lane.DIRECTION else held.has(LANE_LETTERS[lane])
+		var color: Color = _lane_colors[lane]
+		var pressed := direction != SequenceInput.NEUTRAL if lane == DIRECTION_LANE else held.has(_lane_ids[lane])
 		if playing and controller.judge.is_holding(lane):
 			# Pulsing glow while a hold is being kept.
 			var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 60.0)
 			draw_circle(center, radius * (1.15 + 0.1 * pulse), Color(color, 0.25 + 0.2 * pulse))
 		draw_circle(center, radius, Color(color, 0.55 if pressed else 0.12))
 		draw_arc(center, radius, 0.0, TAU, 48, color, 3.0, true)
-		if lane == Lane.DIRECTION:
+		if lane == DIRECTION_LANE:
 			if pressed:
 				_draw_arrow(center, radius * 1.3, direction, Color.WHITE)
 		else:
-			var font_size := int(radius * 0.9)
-			draw_string(font, Vector2(center.x - radius, center.y + font_size * 0.35), LANE_LETTERS[lane],
-					HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color(1, 1, 1, 0.8))
+			var text := _lane_ids[lane]
+			var font_size := int(radius * (0.9 if text.length() == 1 else 0.6))
+			var at := Vector2(center.x - radius, center.y + font_size * 0.35)
+			# Outlined so it stays readable on light lanes.
+			draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, 4, Color(0, 0, 0, 0.5))
+			draw_string(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color(1, 1, 1, 0.85))
 
 	for flash in _flashes:
 		var t: float = flash.time_left / FLASH_TIME
@@ -308,15 +331,17 @@ func _draw_receptors() -> void:
 func _draw_headers() -> void:
 	var font := get_theme_default_font()
 	var y := TOP_MARGIN - 30.0
-	for lane in LANE_COUNT:
+	for lane in _lane_count:
 		var center := Vector2(_project(_lane_center(lane), 1.0).x, y)
-		var color: Color = LANE_COLORS[lane]
-		if lane == Lane.DIRECTION:
+		var color: Color = _lane_colors[lane]
+		if lane == DIRECTION_LANE:
 			_draw_joystick_icon(center, color)
 		else:
+			var text := _lane_ids[lane]
+			var font_size := 20 if text.length() == 1 else 14
 			draw_circle(center, 16.0, color)
-			draw_string(font, Vector2(center.x - 16.0, center.y + 7.0), LANE_LETTERS[lane],
-					HORIZONTAL_ALIGNMENT_CENTER, 32.0, 20, Color(0.05, 0.05, 0.08))
+			draw_string(font, Vector2(center.x - 16.0, center.y + font_size * 0.35), text,
+					HORIZONTAL_ALIGNMENT_CENTER, 32.0, font_size, Color(0.05, 0.05, 0.08))
 
 
 func _draw_joystick_icon(center: Vector2, color: Color) -> void:
@@ -333,6 +358,8 @@ func _draw_message() -> void:
 	if controller == null or controller.state == PlayState.STOPPED:
 		if SequenceManager.current_sequence == null:
 			text = "Load or record a sequence"
+		elif SequenceManager.is_mode_mismatch():
+			text = "This sequence is for %s" % InputMode.title(SequenceManager.current_sequence.mode)
 		else:
 			text = "Press PLAY (Space / L3) to practice"
 	elif controller.state == PlayState.LOOP_PAUSE:
@@ -364,7 +391,7 @@ func _on_hold_finished(target: TimingJudge.Target) -> void:
 		_popup(target.lane, "DROP", RATING_COLORS[Rating.MISS])
 
 
-func _on_extra_press(lane: Lane) -> void:
+func _on_extra_press(lane: int) -> void:
 	_popup(lane, "EXTRA", Color(0.7, 0.7, 0.75))
 
 

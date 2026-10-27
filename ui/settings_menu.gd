@@ -2,6 +2,9 @@ class_name SettingsMenu
 extends Control
 ## Modal overlay for rebinding controls and editing preferences.
 ##
+## The bindings list shows the shared directions and shortcuts plus the
+## buttons and combinations of the selected input mode (rebuilt on open).
+##
 ## Changes apply right away so they can be tried out. Save writes everything
 ## to user://settings.cfg; Cancel (or Esc) goes back to the last saved state.
 
@@ -36,7 +39,6 @@ var _side_option := OptionButton.new()
 
 func _ready() -> void:
 	hide()
-	_build_grid()
 	_build_preferences()
 	UserSettings.preferences_changed.connect(_refresh_preferences)
 	_use_stick.toggled.connect(_on_use_stick_toggled)
@@ -48,11 +50,12 @@ func _ready() -> void:
 
 func open() -> void:
 	_dirty = false
+	_build_grid()
 	_set_status("Click a binding, then press the new key or button.")
 	_refresh()
 	_refresh_preferences()
 	show()
-	_bind_buttons[Kind.KEYBOARD][InputConfig.GAME_ACTIONS[0]].grab_focus()
+	_bind_buttons[Kind.KEYBOARD][InputConfig.DIRECTION_ACTIONS[0]].grab_focus()
 
 
 func _process(delta: float) -> void:
@@ -96,16 +99,28 @@ func _input(event: InputEvent) -> void:
 	var swapped := InputConfig.set_binding(kind, action, binding)
 	_dirty = true
 
-	var message := "%s → %s" % [InputConfig.ACTION_LABELS[action], InputConfig.event_to_text(binding)]
+	var message := "%s → %s" % [InputConfig.action_label(action), InputConfig.event_to_text(binding)]
 	if swapped != &"":
-		message += " (swapped with %s)" % InputConfig.ACTION_LABELS[swapped]
+		message += " (swapped with %s)" % InputConfig.action_label(swapped)
 	_set_status(message + ". Press Save to keep it.")
 
 
 func _build_grid() -> void:
-	_add_header_row(["INPUT", "KEYBOARD", "CONTROLLER"])
-	for action in InputConfig.GAME_ACTIONS:
+	for child in _grid.get_children():
+		_grid.remove_child(child)
+		child.queue_free()
+	_bind_buttons = {Kind.KEYBOARD: {}, Kind.JOYPAD: {}}
+
+	var mode := InputConfig.active_mode
+	_add_header_row(["DIRECTIONS", "KEYBOARD", "CONTROLLER"])
+	for action in InputConfig.DIRECTION_ACTIONS:
 		_add_binding_row(action)
+	_add_header_row(["BUTTONS: " + InputMode.title(mode), "", ""])
+	for button: Dictionary in InputMode.buttons(mode):
+		_add_binding_row(button.action)
+	_add_header_row(["COMBINATIONS", "", ""])
+	for combo: Dictionary in InputMode.combos(mode):
+		_add_binding_row(combo.action)
 	_add_header_row(["SHORTCUTS", "", ""])
 	for action in InputConfig.APP_ACTIONS:
 		_add_binding_row(action)
@@ -121,7 +136,7 @@ func _add_header_row(titles: Array[String]) -> void:
 
 func _add_binding_row(action: StringName) -> void:
 	var label := Label.new()
-	label.text = InputConfig.ACTION_LABELS[action]
+	label.text = InputConfig.action_label(action)
 	_grid.add_child(label)
 	for kind: Kind in [Kind.KEYBOARD, Kind.JOYPAD]:
 		var button := Button.new()
@@ -211,7 +226,7 @@ func _on_binding_pressed(kind: Kind, action: StringName) -> void:
 	_capture_time_left = CAPTURE_TIMEOUT
 	InputConfig.is_capturing = true
 	var what := "a key" if kind == Kind.KEYBOARD else "a controller button or direction"
-	_set_status("Press %s for %s. Esc to cancel." % [what, InputConfig.ACTION_LABELS[action]])
+	_set_status("Press %s for %s. Esc to cancel." % [what, InputConfig.action_label(action)])
 	_capture_button().text = "Press..."
 
 
@@ -241,7 +256,7 @@ func _on_reset_pressed() -> void:
 	InputConfig.reset_to_defaults()
 	UserSettings.reset_preferences()
 	_dirty = true
-	_set_status("Defaults restored. Press Save to keep them.")
+	_set_status("Defaults restored for every input mode. Press Save to keep them.")
 
 
 func _on_cancel_pressed() -> void:

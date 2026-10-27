@@ -28,6 +28,8 @@ const MENU_OPEN_FOLDER := 10_001
 @onready var _time_label: Label = %TimeLabel
 @onready var _frame_label: Label = %FrameLabel
 @onready var _recording_label: Label = %RecordingLabel
+@onready var _mode_warning_label: Label = %ModeWarningLabel
+@onready var _title_label: Label = %Title
 
 var _load_dialog := FileDialog.new()
 var _save_dialog := SaveSequenceDialog.new()
@@ -44,11 +46,12 @@ func _ready() -> void:
 	_play_button.pressed.connect(_toggle_play)
 	SequenceManager.recording_state_changed.connect(_on_recording_state_changed)
 	SequenceManager.sequence_changed.connect(_on_sequence_changed)
+	InputConfig.mode_changed.connect(_on_mode_changed)
 	_gameplay.state_changed.connect(_on_play_state_changed)
 	_gameplay.best_score_changed.connect(_on_best_score_changed)
 	_gameplay.input_judged.connect(func(target: TimingJudge.Target) -> void: Sfx.play(RATING_SOUNDS[target.rating]))
 	_gameplay.hold_finished.connect(_on_hold_finished)
-	_gameplay.extra_press.connect(func(_lane: TimingJudge.Lane) -> void: Sfx.play(&"extra"))
+	_gameplay.extra_press.connect(func(_lane: int) -> void: Sfx.play(&"extra"))
 	_gameplay.loop_finished.connect(func(_rate: float, is_new_best: bool) -> void: Sfx.play(&"new_best" if is_new_best else &"loop_end"))
 	_highway.setup(_gameplay)
 
@@ -58,6 +61,7 @@ func _ready() -> void:
 	_on_sequence_changed()
 	_on_play_state_changed(_gameplay.state)
 	_on_best_score_changed(_gameplay.best_score)
+	_on_mode_changed(InputConfig.active_mode)
 
 
 func _process(_delta: float) -> void:
@@ -218,7 +222,23 @@ func _on_recording_state_changed(state: SequenceRecorder.State) -> void:
 			_recording_label.show()
 
 
+func _on_mode_changed(mode: String) -> void:
+	_title_label.text = "INPUT TRAINER: " + InputMode.title(mode)
+	_update_mode_warning()
+
+
+## Shown for as long as the current sequence and the selected mode differ.
+func _update_mode_warning() -> void:
+	var mismatch := SequenceManager.is_mode_mismatch()
+	_mode_warning_label.visible = mismatch
+	if mismatch:
+		_mode_warning_label.text = "Incompatible input mode, either update the correct one or load a sequence file that matches with it!\n(file: %s, selected: %s)" % [
+			InputMode.title(SequenceManager.current_sequence.mode), InputMode.title(InputConfig.active_mode),
+		]
+
+
 func _on_sequence_changed() -> void:
+	_update_mode_warning()
 	var sequence := SequenceManager.current_sequence
 	_save_button.disabled = sequence == null
 	if sequence == null:

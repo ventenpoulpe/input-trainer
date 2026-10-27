@@ -1,7 +1,8 @@
 class_name SequenceInput
 extends RefCounted
 ## One moment in a sequence: the direction held at that moment plus the
-## buttons newly pressed at that moment.
+## buttons newly pressed at that moment. Button ids depend on the sequence's
+## input mode (see InputMode).
 ##
 ## `direction` is always the full held direction, so it can repeat between
 ## inputs (e.g. holding DOWN_FORWARD while pressing P, then K). Compare with
@@ -20,15 +21,12 @@ const DIRECTIONS := [
 	"NEUTRAL", "UP", "DOWN", "FORWARD", "BACK",
 	"UP_FORWARD", "UP_BACK", "DOWN_FORWARD", "DOWN_BACK",
 ]
-## Canonical button order, used when saving.
-const BUTTONS := ["P", "K", "G"]
-
 var timestamp := 0.0
 var frame := 0
 var direction := NEUTRAL
 var buttons := PackedStringArray()
 var direction_hold := 0.0
-## Button -> hold length in seconds (only for held buttons).
+## Button id -> hold length in seconds (only for held buttons).
 var button_holds := {}
 
 
@@ -36,7 +34,7 @@ func _init(p_timestamp := 0.0, p_direction := NEUTRAL, p_buttons := PackedString
 	timestamp = p_timestamp
 	frame = time_to_frame(p_timestamp)
 	direction = p_direction
-	buttons = sort_buttons(p_buttons)
+	buttons = p_buttons
 
 
 func get_button_hold(button: String) -> float:
@@ -79,12 +77,3 @@ static func direction_from_state(up: bool, down: bool, left: bool, right: bool, 
 	if h:
 		return h
 	return NEUTRAL
-
-
-## Returns the known buttons from `list` in P, K, G order, without duplicates.
-static func sort_buttons(list: PackedStringArray) -> PackedStringArray:
-	var sorted := PackedStringArray()
-	for button: String in BUTTONS:
-		if list.has(button):
-			sorted.append(button)
-	return sorted

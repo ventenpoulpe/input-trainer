@@ -1,13 +1,17 @@
 extends Node
-## Control bindings and the active input device. Autoloaded as `InputConfig`.
+## Control bindings, the active input device and the active input mode.
+## Autoloaded as `InputConfig`.
 ##
-## Each action has one keyboard binding and one controller binding. Only the
-## active device drives the game inputs (directions + P/K/G). App shortcuts
-## (record/play) also accept the keyboard while a controller is active.
+## Each action has one keyboard binding and one controller binding.
+## Directions and app shortcuts are shared by every input mode. Action buttons
+## and button combinations belong to one mode (see InputMode), and only the
+## active mode's are live. Only the active device drives the game inputs; app
+## shortcuts (record/play) also accept the keyboard while a controller is active.
 
 signal bindings_changed
 signal active_device_changed(device_id: int)
 signal devices_changed
+signal mode_changed(mode: String)
 
 enum Kind { KEYBOARD, JOYPAD }
 
@@ -20,43 +24,39 @@ const ACTION_DEADZONE := 0.5
 ## How far a stick/trigger must move to count when rebinding.
 const CAPTURE_AXIS_THRESHOLD := 0.6
 
-const GAME_ACTIONS: Array[StringName] = [
-	&"vf_up", &"vf_down", &"vf_left", &"vf_right", &"vf_punch", &"vf_kick", &"vf_guard",
-]
+const DIRECTION_ACTIONS: Array[StringName] = [&"dir_up", &"dir_down", &"dir_left", &"dir_right"]
 const APP_ACTIONS: Array[StringName] = [&"app_record_toggle", &"app_play_toggle"]
+## Direction actions were named vf_up etc. before input modes existed.
+## Bindings saved under the old names are still read.
+const LEGACY_ACTION_NAMES := {
+	&"dir_up": &"vf_up",
+	&"dir_down": &"vf_down",
+	&"dir_left": &"vf_left",
+	&"dir_right": &"vf_right",
+}
 
-const ACTION_LABELS := {
-	&"vf_up": "Up",
-	&"vf_down": "Down",
-	&"vf_left": "Left",
-	&"vf_right": "Right",
-	&"vf_punch": "Punch (P)",
-	&"vf_kick": "Kick (K)",
-	&"vf_guard": "Guard (G)",
+## Labels and defaults of the shared actions. Mode actions get theirs from InputMode.
+const SHARED_LABELS := {
+	&"dir_up": "Up",
+	&"dir_down": "Down",
+	&"dir_left": "Left",
+	&"dir_right": "Right",
 	&"app_record_toggle": "Record Toggle",
 	&"app_play_toggle": "Play Toggle",
 }
-
-const DEFAULT_KEYS := {
-	&"vf_up": KEY_W,
-	&"vf_down": KEY_S,
-	&"vf_left": KEY_A,
-	&"vf_right": KEY_D,
-	&"vf_punch": KEY_Y,
-	&"vf_kick": KEY_U,
-	&"vf_guard": KEY_G,
+const SHARED_DEFAULT_KEYS := {
+	&"dir_up": KEY_W,
+	&"dir_down": KEY_S,
+	&"dir_left": KEY_A,
+	&"dir_right": KEY_D,
 	&"app_record_toggle": KEY_BACKSPACE,
 	&"app_play_toggle": KEY_SPACE,
 }
-
-const DEFAULT_JOY_BUTTONS := {
-	&"vf_up": JOY_BUTTON_DPAD_UP,
-	&"vf_down": JOY_BUTTON_DPAD_DOWN,
-	&"vf_left": JOY_BUTTON_DPAD_LEFT,
-	&"vf_right": JOY_BUTTON_DPAD_RIGHT,
-	&"vf_punch": JOY_BUTTON_X,
-	&"vf_kick": JOY_BUTTON_Y,
-	&"vf_guard": JOY_BUTTON_A,
+const SHARED_DEFAULT_JOY := {
+	&"dir_up": JOY_BUTTON_DPAD_UP,
+	&"dir_down": JOY_BUTTON_DPAD_DOWN,
+	&"dir_left": JOY_BUTTON_DPAD_LEFT,
+	&"dir_right": JOY_BUTTON_DPAD_RIGHT,
 	&"app_record_toggle": JOY_BUTTON_RIGHT_STICK,
 	&"app_play_toggle": JOY_BUTTON_LEFT_STICK,
 }
@@ -64,10 +64,10 @@ const DEFAULT_JOY_BUTTONS := {
 ## Left stick directions, added on top of the controller bindings when
 ## `use_left_stick` is on. Value is [axis, direction sign].
 const LEFT_STICK := {
-	&"vf_up": [JOY_AXIS_LEFT_Y, -1.0],
-	&"vf_down": [JOY_AXIS_LEFT_Y, 1.0],
-	&"vf_left": [JOY_AXIS_LEFT_X, -1.0],
-	&"vf_right": [JOY_AXIS_LEFT_X, 1.0],
+	&"dir_up": [JOY_AXIS_LEFT_Y, -1.0],
+	&"dir_down": [JOY_AXIS_LEFT_Y, 1.0],
+	&"dir_left": [JOY_AXIS_LEFT_X, -1.0],
+	&"dir_right": [JOY_AXIS_LEFT_X, 1.0],
 }
 
 ## Xbox-style names (Godot uses the SDL layout: A = bottom face button).
@@ -97,11 +97,15 @@ const JOY_BUTTON_NAMES := {
 
 var use_left_stick := true
 var active_device := KEYBOARD_DEVICE
+## Selected input mode (an InputMode id). Saved as soon as it changes.
+var active_mode := InputMode.DEFAULT
 ## Set by the settings menu while it waits for a key press, so gameplay can
 ## ignore that press.
 var is_capturing := false
 
 var _bindings := {Kind.KEYBOARD: {}, Kind.JOYPAD: {}}
+## Directions plus the active mode's buttons and combinations.
+var _game_actions: Array[StringName] = []
 ## Remembered controller, so it is picked again when it reconnects.
 var _preferred_joy_guid := ""
 
@@ -110,16 +114,59 @@ func _ready() -> void:
 	for action in all_actions():
 		if not InputMap.has_action(action):
 			InputMap.add_action(action, ACTION_DEADZONE)
+	var saved_mode: String = UserSettings.get_value("input", "mode", InputMode.DEFAULT)
+	_set_mode(saved_mode if InputMode.is_valid(saved_mode) else InputMode.DEFAULT)
 	load_bindings()
 	_load_device()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 
 
+## Every action of every mode, plus the shared ones.
 static func all_actions() -> Array[StringName]:
 	var actions: Array[StringName] = []
-	actions.append_array(GAME_ACTIONS)
+	actions.append_array(DIRECTION_ACTIONS)
+	for mode: String in InputMode.IDS:
+		actions.append_array(InputMode.actions(mode))
 	actions.append_array(APP_ACTIONS)
 	return actions
+
+
+## The actions that drive gameplay and recording in the active mode.
+func game_actions() -> Array[StringName]:
+	return _game_actions
+
+
+func is_game_event(event: InputEvent) -> bool:
+	for action in _game_actions:
+		if event.is_action(action):
+			return true
+	return false
+
+
+static func action_label(action: StringName) -> String:
+	if SHARED_LABELS.has(action):
+		return SHARED_LABELS[action]
+	return InputMode.action_label(action)
+
+
+# --- Input mode ---------------------------------------------------------------
+
+func set_active_mode(mode: String) -> void:
+	if not InputMode.is_valid(mode):
+		mode = InputMode.DEFAULT
+	if mode == active_mode:
+		return
+	UserSettings.set_value("input", "mode", mode)
+	UserSettings.save()
+	_set_mode(mode)
+	_apply()
+	mode_changed.emit(mode)
+
+
+func _set_mode(mode: String) -> void:
+	active_mode = mode
+	_game_actions = DIRECTION_ACTIONS.duplicate()
+	_game_actions.append_array(InputMode.actions(mode))
 
 
 # --- Bindings ---------------------------------------------------------------
@@ -134,12 +181,15 @@ func get_binding_text(kind: Kind, action: StringName) -> String:
 
 ## Binds `event` to `action`. If another action already used that input, the
 ## two swap bindings; the other action's name is returned (or &"" if none).
+## Only actions that can be live at the same time are checked: the shared
+## ones and those of the action's mode (or the active mode, for a shared
+## action). Different modes may reuse the same keys.
 func set_binding(kind: Kind, action: StringName, event: InputEvent) -> StringName:
 	var table: Dictionary = _bindings[kind]
 	var swapped := &""
 	if event != null:
-		for other: StringName in table:
-			if other != action and events_equal(table[other], event):
+		for other in _conflict_group(action):
+			if other != action and events_equal(table.get(other), event):
 				table[other] = table.get(action)
 				swapped = other
 				break
@@ -149,15 +199,24 @@ func set_binding(kind: Kind, action: StringName, event: InputEvent) -> StringNam
 	return swapped
 
 
+func _conflict_group(action: StringName) -> Array[StringName]:
+	var mode := InputMode.mode_of(action)
+	var group: Array[StringName] = []
+	group.append_array(DIRECTION_ACTIONS)
+	group.append_array(InputMode.actions(mode if mode else active_mode))
+	group.append_array(APP_ACTIONS)
+	return group
+
+
 func set_use_left_stick(enabled: bool) -> void:
 	use_left_stick = enabled
 	_apply()
 	bindings_changed.emit()
 
 
-## Restores default bindings in memory. Call save_bindings() to keep them.
-## (Saving the device choice writes the file too, but only the last saved
-## bindings, since unsaved ones live here, not in UserSettings.)
+## Restores default bindings (every mode) in memory. Call save_bindings() to
+## keep them. (Saving the device or mode choice writes the file too, but only
+## the last saved bindings, since unsaved ones live here, not in UserSettings.)
 func reset_to_defaults() -> void:
 	_set_defaults()
 	_apply()
@@ -173,8 +232,11 @@ func load_bindings() -> bool:
 	for kind: Kind in [Kind.KEYBOARD, Kind.JOYPAD]:
 		var section := _section(kind)
 		for action in all_actions():
-			if UserSettings.has_value(section, action):
-				_bindings[kind][action] = dict_to_event(UserSettings.get_value(section, action))
+			var key: StringName = action
+			if not UserSettings.has_value(section, key) and LEGACY_ACTION_NAMES.has(action):
+				key = LEGACY_ACTION_NAMES[action]
+			if UserSettings.has_value(section, key):
+				_bindings[kind][action] = dict_to_event(UserSettings.get_value(section, key))
 				loaded = true
 	_apply()
 	bindings_changed.emit()
@@ -192,25 +254,32 @@ func save_bindings() -> Error:
 
 func _set_defaults() -> void:
 	use_left_stick = true
-	for action in all_actions():
-		_bindings[Kind.KEYBOARD][action] = _make_key(DEFAULT_KEYS[action])
-		_bindings[Kind.JOYPAD][action] = _make_button(DEFAULT_JOY_BUTTONS[action])
+	for action: StringName in SHARED_DEFAULT_KEYS:
+		_bindings[Kind.KEYBOARD][action] = _make_key(SHARED_DEFAULT_KEYS[action])
+		_bindings[Kind.JOYPAD][action] = _make_joy(SHARED_DEFAULT_JOY[action])
+	for definition in InputMode.all_definitions():
+		_bindings[Kind.KEYBOARD][definition.action] = _make_key(definition.key)
+		_bindings[Kind.JOYPAD][definition.action] = _make_joy(definition.joy)
 
 
-## Rebuilds the InputMap from the bindings and the active device.
+## Rebuilds the InputMap from the bindings, the active device and the active
+## mode. Actions of the other modes get no inputs.
 func _apply() -> void:
 	var joy_active := active_device != KEYBOARD_DEVICE
 	for action in all_actions():
 		InputMap.action_erase_events(action)
-		if action in APP_ACTIONS or not joy_active:
+		# Don't leave an action stuck "pressed" after its inputs changed.
+		Input.action_release(action)
+		var is_app := action in APP_ACTIONS
+		if not is_app and action not in _game_actions:
+			continue
+		if is_app or not joy_active:
 			_add_event(action, get_binding(Kind.KEYBOARD, action), ALL_DEVICES)
 		if joy_active:
 			_add_event(action, get_binding(Kind.JOYPAD, action), active_device)
 			if use_left_stick and LEFT_STICK.has(action):
 				var stick: Array = LEFT_STICK[action]
 				_add_event(action, _make_axis(stick[0], stick[1]), active_device)
-		# Don't leave an action stuck "pressed" after its inputs changed.
-		Input.action_release(action)
 
 
 static func _add_event(action: StringName, event: InputEvent, device: int) -> void:
@@ -357,6 +426,13 @@ static func _make_key(physical: Key) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.physical_keycode = physical
 	return event
+
+
+## A JoyButton, or [axis, direction] for a stick or trigger.
+static func _make_joy(spec: Variant) -> InputEvent:
+	if spec is Array:
+		return _make_axis(spec[0], spec[1])
+	return _make_button(spec)
 
 
 static func _make_button(button: JoyButton) -> InputEventJoypadButton:

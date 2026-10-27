@@ -56,9 +56,20 @@ theme_override_constants/separation = 24
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="BindingGrid" type="GridContainer" parent="Center/Panel/Margin/VBox/Columns/Bindings"]
+[node name="BindingScroll" type="ScrollContainer" parent="Center/Panel/Margin/VBox/Columns/Bindings"]
+custom_minimum_size = Vector2(0, 540)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="BindingMargin" type="MarginContainer" parent="Center/Panel/Margin/VBox/Columns/Bindings/BindingScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_right = 18
+
+[node name="BindingGrid" type="GridContainer" parent="Center/Panel/Margin/VBox/Columns/Bindings/BindingScroll/BindingMargin"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 6
 columns = 3

@@ -2,13 +2,15 @@ class_name SequenceXml
 extends RefCounted
 ## Reads and writes InputSequence XML files:
 ##
-##   <InputSequence name="..." author="..." duration="4.5">
+##   <InputSequence name="..." author="..." mode="VF" duration="4.5">
 ##       <Input timestamp="0.30" frame="18">
 ##           <Direction hold="0.400" holdFrames="24">DOWN_FORWARD</Direction>
 ##           <Buttons><Button>P</Button><Button hold="0.300" holdFrames="18">G</Button></Buttons>
 ##       </Input>
 ##   </InputSequence>
 ##
+## `mode` is the InputMode id; it decides which button ids are valid. Files
+## without it are from before input modes existed and are read as VF.
 ## `hold` (seconds) is optional and marks a hold input; `holdFrames` is only
 ## written for readability. Files without holds use the original schema.
 
@@ -31,8 +33,8 @@ static func save_file(sequence: InputSequence, path: String) -> Error:
 static func to_xml(sequence: InputSequence) -> String:
 	var lines := PackedStringArray()
 	lines.append('<?xml version="1.0" encoding="utf-8"?>')
-	lines.append('<InputSequence name="%s" author="%s" duration="%s">' % [
-		sequence.name.xml_escape(true), sequence.author.xml_escape(true), _format_time(sequence.duration),
+	lines.append('<InputSequence name="%s" author="%s" mode="%s" duration="%s">' % [
+		sequence.name.xml_escape(true), sequence.author.xml_escape(true), sequence.mode, _format_time(sequence.duration),
 	])
 	for input in sequence.inputs:
 		lines.append('    <Input timestamp="%s" frame="%d">' % [_format_time(input.timestamp), input.frame])
@@ -95,6 +97,11 @@ static func _parse(parser: XMLParser, fallback_name: String) -> InputSequence:
 						sequence = InputSequence.new()
 						sequence.name = _attr(parser, "name", fallback_name)
 						sequence.author = _attr(parser, "author", "")
+						var mode := _attr(parser, "mode", InputMode.DEFAULT).strip_edges().to_upper()
+						if not InputMode.is_valid(mode):
+							last_error = "Unknown input mode '%s' (expected %s)." % [mode, ", ".join(PackedStringArray(InputMode.IDS))]
+							return null
+						sequence.mode = mode
 						var duration_text := _attr(parser, "duration", "")
 						if duration_text.is_valid_float():
 							duration = duration_text.to_float()
@@ -114,7 +121,7 @@ static func _parse(parser: XMLParser, fallback_name: String) -> InputSequence:
 						var hold_text := _attr(parser, "hold", "")
 						hold = maxf(hold_text.to_float(), 0.0) if hold_text.is_valid_float() else 0.0
 						if parser.is_empty():
-							_apply_text(input, tag, "", hold, parser.get_current_line())
+							_apply_text(sequence, input, tag, "", hold, parser.get_current_line())
 							text_tag = ""
 			XMLParser.NODE_TEXT, XMLParser.NODE_CDATA:
 				if text_tag:
@@ -123,11 +130,11 @@ static func _parse(parser: XMLParser, fallback_name: String) -> InputSequence:
 				var tag := parser.get_node_name()
 				match tag:
 					"Direction", "Button":
-						_apply_text(input, tag, text.strip_edges().xml_unescape(), hold, parser.get_current_line())
+						_apply_text(sequence, input, tag, text.strip_edges().xml_unescape(), hold, parser.get_current_line())
 						text_tag = ""
 					"Input", "InputNote":  # InputNote: tag used by older files
 						if input != null:
-							input.buttons = SequenceInput.sort_buttons(input.buttons)
+							input.buttons = InputMode.sort_buttons(input.buttons, sequence.mode)
 							sequence.inputs.append(input)
 							input = null
 
@@ -155,7 +162,7 @@ static func _start_input(parser: XMLParser) -> SequenceInput:
 	return input
 
 
-static func _apply_text(input: SequenceInput, tag: String, value: String, hold: float, line: int) -> void:
+static func _apply_text(sequence: InputSequence, input: SequenceInput, tag: String, value: String, hold: float, line: int) -> void:
 	if input == null:
 		return
 	var token := value.to_upper()
@@ -166,12 +173,12 @@ static func _apply_text(input: SequenceInput, tag: String, value: String, hold: 
 		else:
 			push_warning("Unknown direction '%s' on line %d, using NEUTRAL." % [value, line])
 			input.direction = SequenceInput.NEUTRAL
-	elif token in SequenceInput.BUTTONS:
+	elif token in InputMode.button_ids(sequence.mode):
 		input.buttons.append(token)
 		if hold > 0.0:
 			input.button_holds[token] = hold
 	else:
-		push_warning("Unknown button '%s' on line %d, skipped." % [value, line])
+		push_warning("Unknown %s button '%s' on line %d, skipped." % [sequence.mode, value, line])
 
 
 static func _hold_attributes(hold: float) -> String:

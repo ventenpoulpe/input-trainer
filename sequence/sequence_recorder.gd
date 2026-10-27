@@ -7,6 +7,7 @@ extends RefCounted
 ## Changes less than one frame apart are merged into one input, so a diagonal
 ## or a P+G pressed "together" is recorded as a single input.
 ## Directions or buttons held for at least SequenceInput.HOLD_MIN_FRAMES become hold inputs.
+## The recording uses the input mode passed to arm().
 
 enum State { IDLE, ARMED, RECORDING }
 
@@ -14,6 +15,7 @@ const MERGE_WINDOW_USEC := 16_667  # one frame at 60 FPS
 
 var state := State.IDLE
 var inputs: Array[SequenceInput] = []
+var mode := InputMode.DEFAULT
 
 var _start_usec := 0
 var _last_input_usec := 0
@@ -28,8 +30,9 @@ var _direction_input: SequenceInput = null
 
 ## Starts waiting for the first press. Pass what is currently held so inputs
 ## that were already down don't count as presses.
-func arm(direction: String, held_buttons: PackedStringArray) -> void:
+func arm(direction: String, held_buttons: PackedStringArray, p_mode: String) -> void:
 	state = State.ARMED
+	mode = p_mode
 	inputs = []
 	_direction = direction
 	_held = held_buttons
@@ -102,6 +105,7 @@ func stop(now_usec := -1) -> InputSequence:
 	_end_direction_hold(now_usec)
 
 	var sequence := InputSequence.new()
+	sequence.mode = mode
 	sequence.inputs = inputs
 	sequence.duration = _seconds(_last_change_usec)
 	for input in inputs:
@@ -114,9 +118,9 @@ func _add_input(direction: String, pressed: PackedStringArray, now_usec: int) ->
 	if not inputs.is_empty() and now_usec - _last_input_usec < MERGE_WINDOW_USEC:
 		var last := inputs[-1]
 		last.direction = direction
-		last.buttons = SequenceInput.sort_buttons(last.buttons + pressed)
+		last.buttons = InputMode.sort_buttons(last.buttons + pressed, mode)
 		return last
-	var input := SequenceInput.new(_seconds(now_usec), direction, pressed)
+	var input := SequenceInput.new(_seconds(now_usec), direction, InputMode.sort_buttons(pressed, mode))
 	inputs.append(input)
 	_last_input_usec = now_usec
 	return input
