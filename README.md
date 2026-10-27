@@ -23,15 +23,11 @@ Built with **Godot 4.7**.
 
 ## Getting started
 
-### Run from source
+### Download the application
 
-1. Install [Godot 4.7](https://godotengine.org/download) (standard version, not .NET).
-2. Clone this repository:
-   ```bash
-   git clone <this-repo-url>
-   ```
-3. Open Godot, click **Import**, and select the `project.godot` file.
-4. Press **F5** (or the ▶ Play button) to start.
+1. Download the latest version from [Releaeses](https://github.com/ventenpoulpe/input-trainer/releases).
+2. Unzip the archive you've downloaded to the folder of your choice.
+3. Make sure to leave the **Sequences/** folder in the same folder as the exe file.
 
 ### Your first practice session
 
@@ -60,15 +56,9 @@ Press **Space** / **L3** or click **PLAY**. A 1-second countdown appears, then i
 
 ### Reading the screen
 
-```
- MATCH / BEST / PROGRESS        INPUT TRAINER: VF MODE           FILE / TIME / FRAME
- LOOP / rating counts     ┌──────┬──────┬──────┬──────┐
-                          │  🕹   │  G   │  P   │  K   │
-                          │  ↘   │      │  ▬   │      │   ← inputs scroll down
-                          │      │  ▬   │      │  ▬   │
-                          ├──◯───┼──◯───┼──◯───┼──◯───┤   ← hit line
-                          └──────┴──────┴──────┴──────┘
-```
+
+<img width="1591" height="886" alt="image" src="https://github.com/user-attachments/assets/14517430-d480-4f41-8d38-9268d0e0e42b" />
+
 
 | Lane | Color | What to press |
 |---|---|---|
