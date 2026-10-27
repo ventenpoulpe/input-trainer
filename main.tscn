@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://dnr52vomblld0"]
+[gd_scene load_steps=9 format=3 uid="uid://dnr52vomblld0"]
 
 [ext_resource type="Script" uid="uid://yb5yw8wfo61i" path="res://main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://bh3ksq3wphbcf" path="res://ui/device_selector.gd" id="2_device"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" uid="uid://dyvb355x4ec0n" path="res://gameplay/gameplay_controller.gd" id="4_gameplay"]
 [ext_resource type="Script" uid="uid://bhnxsyqf64bei" path="res://ui/highway.gd" id="5_highway"]
 [ext_resource type="Script" path="res://ui/mode_selector.gd" id="6_mode"]
+[ext_resource type="Script" path="res://sequence/sequence_editor.gd" id="7_editor"]
+[ext_resource type="Texture2D" path="res://ui/icons/edit.svg" id="8_edit_icon"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -19,6 +21,10 @@ script = ExtResource("1_main")
 [node name="Gameplay" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("4_gameplay")
+
+[node name="Editor" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("7_editor")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -65,11 +71,19 @@ layout_mode = 2
 focus_mode = 0
 text = "RECORD (START/STOP)"
 
-[node name="SaveXmlButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
+[node name="SaveButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "Save the changes to the current file"
 focus_mode = 0
-text = "SAVE XML"
+text = "SAVE"
+
+[node name="SaveAsButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Save to a new file in the Sequences folder"
+focus_mode = 0
+text = "SAVE AS"
 
 [node name="PlayButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
@@ -77,6 +91,14 @@ custom_minimum_size = Vector2(170, 0)
 layout_mode = 2
 focus_mode = 0
 text = "PLAY (START/STOP)"
+
+[node name="EditButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Edit mode: edit the sequence frame by frame"
+focus_mode = 0
+toggle_mode = true
+icon = ExtResource("8_edit_icon")
 
 [node name="Separator" type="VSeparator" parent="Layout/TopBar/Margin/Toolbar"]
 layout_mode = 2
@@ -217,6 +239,23 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 theme_override_font_sizes/font_size = 24
 text = "RECORDING..."
+
+[node name="EditLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 24
+text = "EDIT MODE"
+
+[node name="EditHelpLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.68, 0.8, 1)
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 3
 
 [node name="ModeWarningLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
 unique_name_in_owner = true

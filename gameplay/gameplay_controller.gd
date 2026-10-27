@@ -41,6 +41,7 @@ var _last_buttons := PackedStringArray()
 
 func _ready() -> void:
 	SequenceManager.sequence_replaced.connect(_on_sequence_replaced)
+	SequenceManager.sequence_edited.connect(_on_sequence_replaced)
 	InputConfig.mode_changed.connect(func(_mode: String) -> void: stop())
 	SequenceManager.recording_state_changed.connect(_on_recording_state_changed)
 

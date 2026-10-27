@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<InputSequence name="SC2-KLK-run_slide_k" author="Momokwai" mode="SC2" duration="1.541">
+<InputSequence name="SC2-KLK-run_slide_k" author="Momokwai" mode="SC2" duration="1.250">
     <Input timestamp="0.000" frame="0">
         <Direction>FORWARD</Direction>
         <Buttons></Buttons>
     </Input>
-    <Input timestamp="0.096" frame="6">
+    <Input timestamp="0.100" frame="6">
         <Direction>NEUTRAL</Direction>
         <Buttons></Buttons>
     </Input>
-    <Input timestamp="0.214" frame="13">
+    <Input timestamp="0.217" frame="13">
         <Direction>FORWARD</Direction>
         <Buttons></Buttons>
     </Input>
-    <Input timestamp="0.305" frame="18">
+    <Input timestamp="0.300" frame="18">
         <Direction>NEUTRAL</Direction>
         <Buttons></Buttons>
     </Input>
-    <Input timestamp="0.409" frame="25">
-        <Direction hold="1.132" holdFrames="68">FORWARD</Direction>
+    <Input timestamp="0.417" frame="25">
+        <Direction hold="0.833" holdFrames="50">FORWARD</Direction>
         <Buttons></Buttons>
     </Input>
-    <Input timestamp="1.236" frame="74">
+    <Input timestamp="1.233" frame="74">
         <Direction>FORWARD</Direction>
         <Buttons>
             <Button>K</Button>
         </Buttons>
     </Input>
-    <Input timestamp="1.541" frame="92">
+    <Input timestamp="1.250" frame="75">
         <Direction>NEUTRAL</Direction>
         <Buttons></Buttons>
     </Input>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InputSequence name="SF3-EVO2004-Daigo-Parry" author="Player1" mode="SF" duration="3.133">
+    <Input timestamp="0.000" frame="0">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.050" frame="3">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.100" frame="6">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.150" frame="9">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.200" frame="12">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.250" frame="15">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.300" frame="18">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.350" frame="21">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.400" frame="24">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.450" frame="27">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.500" frame="30">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.550" frame="33">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.600" frame="36">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.650" frame="39">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.700" frame="42">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.750" frame="45">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.000" frame="60">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.050" frame="63">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.100" frame="66">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.150" frame="69">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.200" frame="72">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.250" frame="75">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.300" frame="78">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.350" frame="81">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.400" frame="84">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.450" frame="87">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.500" frame="90">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.550" frame="93">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.600" frame="96">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.650" frame="99">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.700" frame="102">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.750" frame="105">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.833" frame="110">
+        <Direction>UP_FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.900" frame="114">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.083" frame="125">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.133" frame="128">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.317" frame="139">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button>HK</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="2.617" frame="157">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.650" frame="159">
+        <Direction>DOWN</Direction>
+        <Buttons>
+            <Button>MK</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="2.717" frame="163">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.750" frame="165">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.783" frame="167">
+        <Direction>DOWN_FORWARD</Direction>
+        <Buttons>
+            <Button>HP</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="2.850" frame="171">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.900" frame="174">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.933" frame="176">
+        <Direction>DOWN_FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.967" frame="178">
+        <Direction>FORWARD</Direction>
+        <Buttons>
+            <Button>HK</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="3.133" frame="188">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+</InputSequence>

@@ -18,9 +18,9 @@ Version 1.1
 | `autoload/sequence_manager.gd` (`SequenceManager`) | Current sequence, recorder, load/save, sequences folder, held buttons (combinations included), mode mismatch check. |
 | `autoload/sfx.gd` (`Sfx`) | Sound effects synthesized at startup (no audio files). |
 | `sequence/input_mode.gd` (`InputMode`) | Input mode definitions: buttons, lane colors, combinations, default bindings. |
-| `sequence/` | `SequenceInput`, `InputSequence`, `SequenceRecorder`, `SequenceXml`. |
+| `sequence/` | `SequenceInput`, `InputSequence`, `SequenceRecorder`, `SequenceXml`, `SequenceGrid` (one row per frame), `SequenceEditor` (edit mode). |
 | `gameplay/` | `GameplayController` (loop state machine), `TimingJudge` (targets, ratings, score). |
-| `ui/` | `Highway`, `CountdownRing`, mode dropdown, device dropdown, save dialog, settings menu. |
+| `ui/` | `Highway` (play and edit views), `CountdownRing`, mode dropdown, device dropdown, save dialog, settings menu, `icons/edit.svg`. |
 | `main.tscn` / `main.gd` | Main screen: toolbar, HUD, highway. |
 | `Sequences/` | Sequence XML files. |
 
@@ -170,10 +170,13 @@ Direction bindings saved by version 1.0 (`vf_up`…) are still read. Older `user
 - **Stop:** the recording becomes the current, unsaved sequence (author `Player1`). If nothing was pressed, the previous sequence is kept. Duration = time of the last input change, extended to cover the end of any hold.
 - Starting playback while recording is refused ("Stop recording first").
 
-**Save XML**
-- Disabled until a sequence is loaded or recorded.
-- Opens a dialog with **File name** and **Author** (defaults to `Player1`). The name is sanitized (a trailing `.xml` is stripped, invalid characters replaced). The hint line shows the target path and warns when it will overwrite an existing file.
-- Saves to `<sequences folder>/<name>.xml` with the sequence's own mode. The sequence's `name` attribute is set to the file name.
+**Save / Save As** (both disabled until a sequence is loaded, recorded or created)
+- **SAVE** overwrites the file the sequence was loaded from or last saved to, with the sequence's own mode. If it has no file yet (new recording or new sequence), SAVE works like SAVE AS.
+- **SAVE AS** opens a dialog with **File name** and **Author** (defaults to `Player1`):
+  - The name is sanitized: a trailing `.xml` is stripped and invalid characters are replaced.
+  - The hint line shows the target path and warns when it will overwrite an existing file.
+  - It saves to `<sequences folder>/<name>.xml`, and the sequence's `name` attribute is set to the file name.
+- Unsaved edits are shown with a `*` after the file name (`FILE: name.xml *`). Loading or recording another sequence discards them.
 
 **Actions that stop other activity:** opening the Load menu, Save dialog or Settings menu, or changing the input mode, stops playback. A recording in progress is stopped and kept (or cancelled if only armed).
 
@@ -208,7 +211,53 @@ Direction bindings saved by version 1.0 (`vf_up`…) are still read. Older `user
 - `hold` (seconds) is optional and marks a hold input; `holdFrames` is written for readability only. Files without holds use the plain schema. Files using the older `<InputNote>` tag still load.
 - On load, inputs are sorted by timestamp and `duration` is raised if needed to cover the last input/hold. A missing `name` falls back to the file name.
 
-### 2.4 Gameplay & Timing Evaluation Module
+### 2.4 Frame Editor (Edit Mode)
+
+Edits the current sequence frame by frame, on the highway.
+
+**Entering and leaving**
+- Edit mode is toggled **only** by the pencil button in the toolbar. There is no controller or keyboard shortcut for it.
+- Entering stops playback and stops a recording (kept if started, cancelled if armed).
+- If there is no sequence, entering creates a new, empty one for the selected mode (`FILE: (unsaved sequence)`).
+- Entering is refused when the sequence's mode differs from the selected mode (see 2.1).
+- Changing the input mode leaves edit mode. Loading or recording another sequence while editing switches the editor to it, or leaves edit mode if it is for another mode.
+- While editing, RECORD and PLAY are disabled and their shortcuts do nothing. LOAD XML, SAVE, SAVE AS and SETTINGS still work.
+
+**Model** (`SequenceGrid`)
+- One row per frame at 60 FPS. Each row holds:
+  - the direction held on that frame;
+  - for each of the mode's buttons, one cell: **empty**, **pressed** (goes down on this frame) or **held** (still down from an earlier press). A held cell right after an empty one counts as a press.
+- Every change is converted straight back into the sequence. An input is created on each frame where the direction changes or a button is pressed.
+- A direction or button down for at least 15 frames becomes a hold input. Shorter presses are plain taps, since sequences don't store tap lengths: a 5-frame press saves as a tap.
+- The sequence keeps its original end. It never ends before its last input, and a direction still held on the last frame is released right after it.
+
+**View**
+- The frame at the hit line is the **cursor** (outlined row). TIME/FRAME show the cursor's position.
+- The rows above it are the following frames, with a faint line per frame and a brighter line and frame number every 10 frames.
+- Default view: 40 frames from the hit line to the far end. Zoom range: 15–180 frames.
+- Lanes follow the mode, as in play.
+- Pressed cells are full tiles: an arrow tile in the direction lane, a tile in the button's color in button lanes. Held cells are narrow bars. Holds too short to count (under 15 frames) are drawn dimmer.
+- An orange `END` line marks the end of the sequence. The cell under the mouse is outlined.
+
+**Controls** (also listed in the HUD while editing)
+
+| Action | Effect |
+|---|---|
+| Click a button cell | Cycles empty → pressed → held → empty |
+| Drag from a button cell | Continues as held frames (or empty, when the click emptied the cell) |
+| Click a direction cell | Paints the direction brush on that frame, or neutral if the brush is already there; dragging paints more frames |
+| Right-click (drag) | Clears cells (empty / neutral) |
+| `1`–`9` (top row or numpad) | Direction brush in numpad notation (1 DOWN_BACK, 2 DOWN, 3 DOWN_FORWARD, 4 BACK, 5 NEUTRAL, 6 FORWARD, 7 UP_BACK, 8 UP, 9 UP_FORWARD). Clicking the joystick header opens the same list. Default brush: 6 FORWARD |
+| Mouse wheel, Up / Down | Scroll 1 frame (wheel up / Up = later frames) |
+| Shift+wheel, Page Up / Page Down | Scroll 10 frames |
+| Ctrl+wheel | Zoom |
+| Home / End | Cursor to frame 0 / to the end of the sequence |
+| E | End the sequence at the cursor frame (not before its last input) |
+| Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) | Undo / redo (up to 200 steps, cleared when leaving edit mode) |
+
+The top-row digit keys are read by physical position, so they work on any keyboard layout. Edit-mode keys are ignored while a dialog or text field is in use.
+
+### 2.5 Gameplay & Timing Evaluation Module
 
 **Loop state machine** (`GameplayController`)
 
@@ -257,9 +306,10 @@ Direction bindings saved by version 1.0 (`vf_up`…) are still read. Older `user
 
 Left to right:
 
-`[ LOAD XML ▾ ] [ RECORD (START/STOP) ] [ SAVE XML ] [ PLAY (START/STOP) ] | Mode: [ VF MODE ▼ ] Device: [ Keyboard ▼ ] [ SETTINGS / REBIND ] ...... BEST MATCH SCORE: XX.X%`
+`[ LOAD XML ▾ ] [ RECORD (START/STOP) ] [ SAVE ] [ SAVE AS ] [ PLAY (START/STOP) ] [ ✎ ] | Mode: [ VF MODE ▼ ] Device: [ Keyboard ▼ ] [ SETTINGS / REBIND ] ...... BEST MATCH SCORE: XX.X%`
 
 - RECORD button label follows the state: `RECORD (START/STOP)` → `CANCEL RECORD` (armed) → `STOP RECORD` (recording).
+- `✎` is the edit mode toggle (pencil icon, shown pressed while editing).
 - Mode dropdown items: `VF MODE`, `SC2 MODE`, `SF MODE`.
 - Scores show `--` when there is no value yet.
 
@@ -276,13 +326,14 @@ Below the toolbar: centered title **INPUT TRAINER: <MODE>** (e.g. `INPUT TRAINER
 - Status line at the bottom (load/save results, errors, hints)
 
 **Right column (info & timers)**
-- `FILE: <filename>.xml` (or `(unsaved recording)`, or `-`)
+- `FILE: <filename>.xml` (with ` *` when there are unsaved edits), or `(unsaved recording)`, `(unsaved sequence)`, or `-`
 - `TIME: X.XX s`
 - `FRAME: N f` (60 FPS)
 - Recording label, only while recording is active: `ARMED` / `first input starts recording` (two lines), then `RECORDING...`
+- While editing: `EDIT MODE` and the list of edit controls (including the current direction brush).
 - Mode mismatch warning (orange, wrapped), below the recording label, only while the sequence's mode differs from the selected mode (see 2.1).
 
-TIME/FRAME show the elapsed recording time while recording, the sequence time while playing, and the sequence duration otherwise.
+TIME/FRAME show the elapsed recording time while recording, the sequence time while playing, the cursor frame while editing, and the sequence duration otherwise.
 
 ### 3.3 Highway
 
@@ -306,6 +357,7 @@ Button colors:
 - **Hold inputs:** a bar trails behind the tile to the hold's end. While held, the bar is eaten at the hit line and glows; dropped holds turn grey.
 - Hit inputs disappear; missed inputs stay visible in grey and scroll past.
 - **Hit line:** translucent bar across the track with one circular receptor per lane. Receptors light up with the live input (the direction receptor shows an arrow of the held direction; button receptors show their id, outlined for readability). Combinations light up every button they cover.
+- **Edit mode:** the track shows the frame grid described in 2.4 instead of the playing sequence. It is slightly narrower to leave room for the frame numbers, and it takes mouse input (in play it ignores the mouse).
 - **Messages on the highway when stopped:**
   - `Load or record a sequence`
   - `This sequence is for <MODE>` (mode mismatch)

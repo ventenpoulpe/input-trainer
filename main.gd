@@ -11,11 +11,16 @@ const MENU_BROWSE := 10_000
 const MENU_OPEN_FOLDER := 10_001
 
 @onready var _gameplay: GameplayController = %Gameplay
+@onready var _editor: SequenceEditor = %Editor
 @onready var _highway: Highway = %Highway
 @onready var _settings_menu: SettingsMenu = %SettingsMenu
 @onready var _load_menu: MenuButton = %LoadXmlButton
 @onready var _record_button: Button = %RecordButton
-@onready var _save_button: Button = %SaveXmlButton
+@onready var _save_button: Button = %SaveButton
+@onready var _save_as_button: Button = %SaveAsButton
+@onready var _edit_button: Button = %EditButton
+@onready var _edit_label: Label = %EditLabel
+@onready var _edit_help_label: Label = %EditHelpLabel
 @onready var _play_button: Button = %PlayButton
 @onready var _best_score_label: Label = %BestScoreLabel
 @onready var _match_label: Label = %MatchLabel
@@ -42,7 +47,12 @@ func _ready() -> void:
 	_load_menu.about_to_popup.connect(_populate_load_menu)
 	_load_menu.get_popup().id_pressed.connect(_on_load_menu_id_pressed)
 	_record_button.pressed.connect(_toggle_record)
-	_save_button.pressed.connect(_open_save_dialog)
+	_save_button.pressed.connect(_save)
+	_save_as_button.pressed.connect(_open_save_dialog)
+	_edit_button.pressed.connect(_toggle_edit)
+	_editor.active_changed.connect(_on_edit_active_changed)
+	_editor.brush_changed.connect(func(_direction: String) -> void: _update_edit_help())
+	SequenceManager.sequence_edited.connect(_update_file_label)
 	_play_button.pressed.connect(_toggle_play)
 	SequenceManager.recording_state_changed.connect(_on_recording_state_changed)
 	SequenceManager.sequence_changed.connect(_on_sequence_changed)
@@ -53,7 +63,7 @@ func _ready() -> void:
 	_gameplay.hold_finished.connect(_on_hold_finished)
 	_gameplay.extra_press.connect(func(_lane: int) -> void: Sfx.play(&"extra"))
 	_gameplay.loop_finished.connect(func(_rate: float, is_new_best: bool) -> void: Sfx.play(&"new_best" if is_new_best else &"loop_end"))
-	_highway.setup(_gameplay)
+	_highway.setup(_gameplay, _editor)
 
 	_setup_load_dialog()
 	add_child(_save_dialog)
@@ -62,19 +72,37 @@ func _ready() -> void:
 	_on_play_state_changed(_gameplay.state)
 	_on_best_score_changed(_gameplay.best_score)
 	_on_mode_changed(InputConfig.active_mode)
+	_on_edit_active_changed(false)
 
 
 func _process(_delta: float) -> void:
-	if SequenceManager.is_recording_active():
+	if _editor.active:
+		_show_time(_editor.view_frame / SequenceInput.FPS)
+	elif SequenceManager.is_recording_active():
 		_show_time(SequenceManager.get_recording_elapsed())
 	elif _gameplay.is_running():
 		_show_time(maxf(_gameplay.get_time(), 0.0))
 	_update_stats()
 
 
+## Edit mode keys are read before the UI so focused buttons don't take the
+## arrow keys. They are ignored while a dialog or text field is in use.
+func _input(event: InputEvent) -> void:
+	if not _editor.active or not event is InputEventKey:
+		return
+	if _settings_menu.visible or _save_dialog.visible or _load_dialog.visible:
+		return
+	if get_viewport().gui_get_focus_owner() is LineEdit:
+		return
+	if _handle_edit_key(event):
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _settings_menu.visible or InputConfig.is_capturing:
 		return
+	if _editor.active:
+		return  # play/record shortcuts are off while editing
 	if event.is_action_pressed(&"app_record_toggle"):
 		get_viewport().set_input_as_handled()
 		_toggle_record()
@@ -100,6 +128,29 @@ func _toggle_play() -> void:
 func _toggle_record() -> void:
 	_gameplay.stop()
 	SequenceManager.toggle_recording()
+
+
+## Edit mode is only toggled from its toolbar button.
+func _toggle_edit() -> void:
+	if _editor.active:
+		_editor.stop()
+		_set_status("Left edit mode.")
+		return
+	_stop_everything()
+	var error := _editor.start()
+	_set_status(error if error else "Edit mode: click the lanes to change inputs. SAVE keeps the changes.")
+	_edit_button.set_pressed_no_signal(_editor.active)
+
+
+func _save() -> void:
+	if SequenceManager.current_sequence == null:
+		return
+	if SequenceManager.current_path.is_empty():
+		_open_save_dialog()
+		return
+	_gameplay.stop()
+	var error := SequenceManager.save_in_place()
+	_set_status(error if error else "Saved %s." % SequenceManager.current_path.get_file())
 
 
 func _open_settings() -> void:
@@ -157,6 +208,7 @@ func _on_load_file_selected(path: String) -> void:
 
 func _open_save_dialog() -> void:
 	_stop_everything()
+	_editor.end_stroke()
 	if SequenceManager.current_sequence:
 		_save_dialog.open()
 
@@ -239,19 +291,109 @@ func _update_mode_warning() -> void:
 
 func _on_sequence_changed() -> void:
 	_update_mode_warning()
+	_update_file_label()
 	var sequence := SequenceManager.current_sequence
-	_save_button.disabled = sequence == null
 	if sequence == null:
-		_file_label.text = "FILE: -"
 		_show_time(0.0)
 		return
+	if not _editor.active:
+		_show_time(sequence.duration)
+	if not SequenceManager.current_path:
+		if sequence.inputs.is_empty():
+			_set_status("New empty %s sequence: click the lanes to add inputs." % InputMode.title(sequence.mode))
+		else:
+			_set_status("Recorded %d inputs (%.2f s). Press PLAY to practice or SAVE AS to keep it." % [
+				sequence.inputs.size(), sequence.duration,
+			])
+
+
+## FILE label, with a * when there are unsaved edits.
+func _update_file_label() -> void:
+	var sequence := SequenceManager.current_sequence
+	_save_button.disabled = sequence == null
+	_save_as_button.disabled = sequence == null
+	if sequence == null:
+		_file_label.text = "FILE: -"
+		return
 	var path := SequenceManager.current_path
-	_file_label.text = "FILE: " + (path.get_file() if path else "(unsaved recording)")
-	_show_time(sequence.duration)
-	if not path:
-		_set_status("Recorded %d inputs (%.2f s). Press PLAY to practice or SAVE XML to keep it." % [
-			sequence.inputs.size(), sequence.duration,
-		])
+	if path:
+		_file_label.text = "FILE: " + path.get_file() + (" *" if SequenceManager.has_unsaved_edits else "")
+	elif SequenceManager.has_unsaved_edits or sequence.inputs.is_empty():
+		_file_label.text = "FILE: (unsaved sequence)"
+	else:
+		_file_label.text = "FILE: (unsaved recording)"
+
+
+# --- Edit mode -----------------------------------------------------------------
+
+func _on_edit_active_changed(is_active: bool) -> void:
+	_edit_button.set_pressed_no_signal(is_active)
+	_edit_label.visible = is_active
+	_edit_help_label.visible = is_active
+	_record_button.disabled = is_active
+	_play_button.disabled = is_active
+	_update_edit_help()
+	if not is_active and SequenceManager.current_sequence:
+		_show_time(SequenceManager.current_sequence.duration)
+
+
+func _update_edit_help() -> void:
+	var digit: int = SequenceEditor.NUMPAD_DIRECTIONS.find_key(_editor.brush)
+	_edit_help_label.text = "\n".join([
+		"Click a cell: press → hold → empty",
+		"Drag: hold over several frames",
+		"Right-click (drag): clear",
+		"Direction lane: click paints the brush, click again for neutral",
+		"Brush: %d %s (keys 1-9 or click the joystick)" % [digit, _editor.brush],
+		"Wheel / Up / Down: scroll (Shift / PgUp / PgDn: 10 frames)",
+		"Ctrl+Wheel: zoom   Home / End: start / end",
+		"E: end the sequence at the cursor frame",
+		"Ctrl+Z / Ctrl+Y: undo / redo",
+	])
+
+
+## Keyboard keys of edit mode. Returns true if the event was used.
+func _handle_edit_key(event: InputEvent) -> bool:
+	var key := event as InputEventKey
+	if key == null or not key.pressed:
+		return false
+	if key.ctrl_pressed:
+		if key.keycode == KEY_Z:
+			if key.shift_pressed:
+				_editor.redo()
+			else:
+				_editor.undo()
+			return true
+		if key.keycode == KEY_Y:
+			_editor.redo()
+			return true
+		return false
+	# Top-row digits by physical key (works on any layout), or the numpad.
+	if key.physical_keycode >= KEY_1 and key.physical_keycode <= KEY_9:
+		_editor.set_brush_numpad(key.physical_keycode - KEY_0)
+		return true
+	if key.keycode >= KEY_KP_1 and key.keycode <= KEY_KP_9:
+		_editor.set_brush_numpad(key.keycode - KEY_KP_0)
+		return true
+	match key.keycode:
+		KEY_UP:
+			_editor.scroll(1)
+		KEY_DOWN:
+			_editor.scroll(-1)
+		KEY_PAGEUP:
+			_editor.scroll(10)
+		KEY_PAGEDOWN:
+			_editor.scroll(-10)
+		KEY_HOME:
+			_editor.go_to(0)
+		KEY_E:
+			_editor.set_end(_editor.view_frame)
+		KEY_END:
+			var sequence := SequenceManager.current_sequence
+			_editor.go_to(SequenceInput.time_to_frame(sequence.duration) if sequence else 0)
+		_:
+			return false
+	return true
 
 
 func _show_time(seconds: float) -> void:

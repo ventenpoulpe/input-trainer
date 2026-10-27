@@ -11,6 +11,7 @@ Built with **Godot 4.7**.
 ## Features
 
 - **Three input modes.** VF (G, P, K), SC2 (G, A, B, K) and SF (LP, LK, MP, MK, HP, HK), each with its own lanes, colors and bindings.
+- **Frame-by-frame editor.** Fix a recording or write a sequence from scratch, one frame at a time, right on the highway.
 - **Combination buttons.** Bind one button to several at once, like P+K in VF or HP+HK in SF.
 - **Record your own sequences.** Recording starts on your first press, so there's no dead time at the start. Diagonals, simultaneous buttons (like P+G) and held inputs are all captured.
 - **Frame-accurate judging.** Each input is rated **PERFECT**, **GREAT**, **GOOD** or **MISS**, and shows how many frames early or late you were (`-2f`, `+1f`).
@@ -68,9 +69,31 @@ Each sequence file remembers the mode it was recorded in. If you load a sequence
    The screen shows **ARMED**: nothing is recorded yet.
 2. Perform your sequence. **Your first press is time zero.** The recording uses the current mode.
 3. Press **Backspace** / **R3** again to stop.
-4. Click **SAVE XML**, give it a name, and it's saved to the `Sequences` folder.
+4. Click **SAVE AS**, give it a name, and it's saved to the `Sequences` folder.
+   After that, **SAVE** overwrites the same file.
 
 > Tip: pressing record while it's still armed cancels it.
+
+### Editing a sequence frame by frame
+
+Click the **pencil** button in the toolbar to enter edit mode (click it again to leave). It edits the current sequence, or starts a new empty one if none is loaded. The highway then shows one row per frame (60 per second), and the row on the hit line is the **cursor**.
+
+| To do this | Do this |
+|---|---|
+| Press a button on a frame | Click its cell: empty → pressed → held → empty |
+| Hold a button over several frames | Click the first frame and drag |
+| Set the direction on a frame | Click the direction lane (paints the **brush**); drag for several frames |
+| Pick the direction brush | Keys **1–9** (numpad notation: 6 = forward, 2 = down, 3 = down-forward…), or click the joystick at the top of the track |
+| Clear cells | Right-click (and drag) |
+| Scroll | Mouse wheel or **Up / Down** (**Shift** or **Page Up / Down** for 10 frames) |
+| Zoom | **Ctrl + mouse wheel** |
+| Jump to the start / end | **Home** / **End** |
+| End the sequence at the cursor | **E** |
+| Undo / redo | **Ctrl+Z** / **Ctrl+Y** |
+
+- Presses and holds shorter than 15 frames are saved as plain taps, and they're drawn dimmer as a reminder.
+- Changes apply right away (a `*` appears after the file name). Click **SAVE** to keep them.
+- RECORD and PLAY are off while editing: leave edit mode to play your changes.
 
 ### Playing a sequence
 
@@ -230,7 +253,7 @@ Files using the older `<InputNote>` tag still load.
 ```
 autoload/      Global services: settings, input bindings, sequence manager, sound effects
 gameplay/      Practice loop and timing judge (ratings and scoring)
-sequence/      Input modes, sequence data, recorder and XML reader/writer
+sequence/      Input modes, sequence data, recorder, frame editor and XML reader/writer
 ui/            Highway, countdown, mode and device selectors, save dialog, settings menu
 Sequences/     Sequence XML files
 main.tscn      Main screen

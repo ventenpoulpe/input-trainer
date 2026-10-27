@@ -9,8 +9,10 @@ extends Node
 signal recording_state_changed(state: SequenceRecorder.State)
 ## The current sequence or its file changed (loaded, recorded or saved).
 signal sequence_changed
-## A different sequence became current (loaded or recorded, not saved).
+## A different sequence became current (loaded, recorded or new, not saved).
 signal sequence_replaced
+## The current sequence was changed in the frame editor (not saved yet).
+signal sequence_edited
 
 const DEFAULT_AUTHOR := "Player1"
 
@@ -22,6 +24,8 @@ var facing_right: bool:
 var current_sequence: InputSequence
 ## File the current sequence was loaded from or saved to. Empty if unsaved.
 var current_path := ""
+## True when the current sequence was edited since it was loaded or saved.
+var has_unsaved_edits := false
 
 var _recorder := SequenceRecorder.new()
 
@@ -164,6 +168,36 @@ func load_sequence(path: String) -> String:
 	return ""
 
 
+## Starts a new, empty sequence for `mode` (used by the frame editor).
+func new_sequence(mode: String) -> void:
+	cancel_recording()
+	var sequence := InputSequence.new()
+	sequence.mode = mode
+	sequence.author = DEFAULT_AUTHOR
+	_set_current(sequence, "")
+
+
+## Replaces the current sequence with an edited version, keeping its file.
+func apply_edit(sequence: InputSequence) -> void:
+	current_sequence = sequence
+	has_unsaved_edits = true
+	sequence_edited.emit()
+
+
+## Overwrites the file the current sequence came from.
+## Returns an error message, or "" on success.
+func save_in_place() -> String:
+	if current_sequence == null:
+		return "Nothing to save yet: record or load a sequence first."
+	if current_path.is_empty():
+		return "This sequence has no file yet: use SAVE AS."
+	if SequenceXml.save_file(current_sequence, current_path) != OK:
+		return SequenceXml.last_error
+	has_unsaved_edits = false
+	sequence_changed.emit()
+	return ""
+
+
 ## Saves the current sequence as <sequences dir>/<file_name>.xml.
 ## Returns an error message, or "" on success.
 func save_current(file_name: String, author: String) -> String:
@@ -178,6 +212,7 @@ func save_current(file_name: String, author: String) -> String:
 	if SequenceXml.save_file(current_sequence, path) != OK:
 		return SequenceXml.last_error
 	current_path = path
+	has_unsaved_edits = false
 	sequence_changed.emit()
 	return ""
 
@@ -193,5 +228,6 @@ func _on_mode_changed(_mode: String) -> void:
 func _set_current(sequence: InputSequence, path: String) -> void:
 	current_sequence = sequence
 	current_path = path
+	has_unsaved_edits = false
 	sequence_replaced.emit()
 	sequence_changed.emit()

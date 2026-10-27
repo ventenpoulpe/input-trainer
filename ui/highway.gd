@@ -9,6 +9,9 @@ extends Control
 ##
 ## Lanes follow the selected input mode: the direction lane, then one lane per
 ## action button (VF: 4 lanes, SC2: 5, SF: 7).
+##
+## In edit mode (see SequenceEditor) the track shows one row per frame instead
+## of the playing sequence, and the mouse edits cells and scrolls.
 
 const DIRECTION_LANE := TimingJudge.DIRECTION_LANE
 const Rating := TimingJudge.Rating
@@ -52,8 +55,11 @@ const TILE_DEPTH := 0.045
 const HOLD_BAR_WIDTH := 0.4
 const GRID_STEP := 0.25  # seconds between moving grid lines
 const FLASH_TIME := 0.25
+const EDIT_CELL := SequenceGrid.Cell
+const END_COLOR := Color(1.0, 0.6, 0.2)
 
 var controller: GameplayController
+var editor: SequenceEditor
 
 ## Lanes of the selected mode; index 0 is the direction lane.
 var _lane_count := 1
@@ -73,6 +79,9 @@ var _flashes: Array[Dictionary] = []  # {lane, color, time_left}
 var _popups: Array[Label] = []
 var _ring := CountdownRing.new()
 var _pause_text := ""
+## Edit mode: cell under the mouse (lane, frame), or (-1, -1).
+var _hover := Vector2i(-1, -1)
+var _brush_menu := PopupMenu.new()
 
 
 func _ready() -> void:
@@ -84,6 +93,10 @@ func _ready() -> void:
 		_popups.append(null)
 	add_child(_ring)
 	_ring.hide()
+	for digit in [7, 8, 9, 4, 5, 6, 1, 2, 3]:
+		_brush_menu.add_item("%d   %s" % [digit, SequenceEditor.NUMPAD_DIRECTIONS[digit]], digit)
+	_brush_menu.id_pressed.connect(func(digit: int) -> void: editor.set_brush_numpad(digit))
+	add_child(_brush_menu)
 	InputConfig.mode_changed.connect(_setup_lanes)
 	_setup_lanes(InputConfig.active_mode)
 
@@ -102,7 +115,9 @@ func _setup_lanes(mode: String) -> void:
 	queue_redraw()
 
 
-func setup(p_controller: GameplayController) -> void:
+func setup(p_controller: GameplayController, p_editor: SequenceEditor) -> void:
+	editor = p_editor
+	editor.active_changed.connect(_on_edit_active_changed)
 	controller = p_controller
 	controller.input_judged.connect(_on_input_judged)
 	controller.hold_finished.connect(_on_hold_finished)
@@ -124,7 +139,7 @@ func _process(delta: float) -> void:
 		if stream.emitting != holding:
 			stream.emitting = holding
 
-	var counting := controller != null and controller.state == PlayState.COUNTDOWN
+	var counting := controller != null and controller.state == PlayState.COUNTDOWN and not _editing()
 	_ring.visible = counting
 	if counting:
 		_ring.progress = controller.get_phase_progress()
@@ -137,7 +152,9 @@ func _process(delta: float) -> void:
 func _update_geometry() -> void:
 	_hit_y = size.y - BOTTOM_MARGIN
 	var lane_factor := maxf(1.0, float(_lane_count) / BASE_LANE_COUNT)
-	_half_width = minf(size.x * 0.48, (_hit_y - TOP_MARGIN) * 0.75 * lane_factor)
+	# Edit mode leaves room on the left for the frame numbers.
+	var max_half := size.x * 0.5 - (60.0 if _editing() else size.x * 0.02)
+	_half_width = minf(max_half, (_hit_y - TOP_MARGIN) * 0.75 * lane_factor)
 	_center_x = size.x / 2.0
 	_horizon_y = (TOP_MARGIN - _hit_y * FAR_SCALE) / (1.0 - FAR_SCALE)
 	# Depth at the bottom edge of the control.
@@ -181,6 +198,11 @@ static func _far_fade(u: float) -> float:
 func _draw() -> void:
 	_update_geometry()
 	if _hit_y - TOP_MARGIN < 40.0:
+		return
+	if _editing():
+		_draw_track()
+		_draw_editor()
+		_draw_headers()
 		return
 	_draw_track()
 	if controller and controller.state == PlayState.PLAYING:
@@ -367,6 +389,197 @@ func _draw_message() -> void:
 	if text:
 		var font := get_theme_default_font()
 		draw_string(font, Vector2(0, size.y * 0.42), text, HORIZONTAL_ALIGNMENT_CENTER, size.x, 22, Color(1, 1, 1, 0.85))
+
+
+# --- Edit mode -------------------------------------------------------------------
+
+func _editing() -> bool:
+	return editor != null and editor.active
+
+
+func _on_edit_active_changed(is_active: bool) -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP if is_active else Control.MOUSE_FILTER_IGNORE
+	_hover = Vector2i(-1, -1)
+	queue_redraw()
+
+
+func _gui_input(event: InputEvent) -> void:
+	if not _editing():
+		return
+	var button := event as InputEventMouseButton
+	if button:
+		if button.pressed and button.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+			var up := button.button_index == MOUSE_BUTTON_WHEEL_UP
+			if button.ctrl_pressed:
+				editor.zoom(0.85 if up else 1.0 / 0.85)
+			else:
+				editor.scroll((1 if up else -1) * (10 if button.shift_pressed else 1))
+			_hover = _cell_at(button.position)
+			accept_event()
+		elif button.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+			if button.pressed:
+				if button.button_index == MOUSE_BUTTON_LEFT and _is_on_direction_header(button.position):
+					_brush_menu.popup(Rect2i(Vector2i(global_position + button.position), Vector2i.ZERO))
+				else:
+					var cell := _cell_at(button.position)
+					if cell.x >= 0:
+						editor.begin_stroke(cell.x, cell.y, button.button_index == MOUSE_BUTTON_RIGHT)
+			else:
+				editor.end_stroke()
+			accept_event()
+	var motion := event as InputEventMouseMotion
+	if motion:
+		_hover = _cell_at(motion.position)
+		if editor.is_stroking():
+			var frame := _frame_at(motion.position.y)
+			if frame >= 0:
+				editor.continue_stroke(frame)
+
+
+## Frame of the row at screen height `y`, or -1 outside the track.
+func _frame_at(y: float) -> int:
+	var depth := _depth_at(y)
+	if is_nan(depth):
+		return -1
+	return maxi(-1, roundi(editor.view_frame + depth * editor.span_frames))
+
+
+## Track depth `u` at screen height `y` (NAN above the far end).
+func _depth_at(y: float) -> float:
+	var s := (y - _horizon_y) / (_hit_y - _horizon_y)
+	if s <= 0.0:
+		return NAN
+	var u := (1.0 / s - 1.0) / (1.0 / FAR_SCALE - 1.0)
+	if u > 1.0:
+		return NAN
+	return maxf(u, _bottom_u)
+
+
+## (lane, frame) of the cell at `pos`, or (-1, -1).
+func _cell_at(pos: Vector2) -> Vector2i:
+	var depth := _depth_at(pos.y)
+	if is_nan(depth):
+		return Vector2i(-1, -1)
+	var x := (pos.x - _center_x) / (_half_width * _scale(depth))
+	if x < -1.0 or x >= 1.0:
+		return Vector2i(-1, -1)
+	var frame := roundi(editor.view_frame + depth * editor.span_frames)
+	if frame < 0:
+		return Vector2i(-1, -1)
+	return Vector2i(int((x + 1.0) / 2.0 * _lane_count), frame)
+
+
+func _is_on_direction_header(pos: Vector2) -> bool:
+	var center := Vector2(_project(_lane_center(DIRECTION_LANE), 1.0).x, TOP_MARGIN - 30.0)
+	return pos.distance_to(center) < 22.0
+
+
+## Row edges of `frame` as track depths.
+func _row_depths(frame: int) -> Vector2:
+	var view := float(editor.view_frame)
+	return Vector2((frame - view - 0.5) / editor.span_frames, (frame - view + 0.5) / editor.span_frames)
+
+
+func _draw_editor() -> void:
+	var grid := editor.grid
+	var view := editor.view_frame
+	var span := editor.span_frames
+	var font := get_theme_default_font()
+	var first := maxi(0, floori(view + _bottom_u * span))
+	var last := ceili(view + span)
+	var ids := editor.lane_ids()
+	var end_frame := SequenceInput.time_to_frame(SequenceManager.current_sequence.duration) if SequenceManager.current_sequence else 0
+
+	for frame in range(first, last + 1):
+		var depths := _row_depths(frame)
+		var u0 := maxf(depths.x, _bottom_u)
+		var u1 := minf(depths.y, 1.0)
+		if u1 <= u0:
+			continue
+		var fade := _far_fade(u0)
+		var row_height := _project(0.0, u0).y - _project(0.0, u1).y
+
+		# Row lines: every frame when there is room, brighter every 10 frames.
+		if frame % 10 == 0:
+			draw_line(_project(-1.0, u0), _project(1.0, u0), Color(1, 1, 1, 0.22 * fade), 1.0)
+			if row_height * 10.0 > 18.0 and u1 < 0.93:
+				var at := _project(-1.0, (u0 + u1) / 2.0)
+				draw_string(font, Vector2(at.x - 60.0, at.y + 5.0), str(frame), HORIZONTAL_ALIGNMENT_RIGHT, 50.0, 13, Color(1, 1, 1, 0.5 * fade))
+		elif row_height > 5.0:
+			draw_line(_project(-1.0, u0), _project(1.0, u0), Color(1, 1, 1, 0.06 * fade), 1.0)
+
+		# Direction lane.
+		var direction := grid.get_direction(frame)
+		if direction != SequenceInput.NEUTRAL:
+			var color := Color(DIRECTION_COLOR, fade)
+			if direction != grid.get_direction(frame - 1):
+				var quad := _cell_quad(DIRECTION_LANE, u0, u1, 0.05)
+				draw_colored_polygon(quad, Color(0.14, 0.15, 0.2, fade))
+				var outline := quad.duplicate()
+				outline.append(quad[0])
+				draw_polyline(outline, color, 2.0, true)
+				var width := quad[1].x - quad[0].x
+				_draw_arrow((quad[0] + quad[2]) / 2.0, minf(width * 0.45, row_height * 0.9), direction, color)
+			else:
+				_draw_hold_cell(DIRECTION_LANE, u0, u1, Color(color, 0.35 * fade), grid.direction_run(_direction_start(frame)) >= SequenceInput.HOLD_MIN_FRAMES)
+
+		# Button lanes.
+		for i in ids.size():
+			var id := ids[i]
+			var lane := i + 1
+			var cell := grid.get_cell(id, frame)
+			if cell == EDIT_CELL.NONE:
+				continue
+			var color: Color = _lane_colors[lane]
+			if grid.is_press(id, frame):
+				var quad := _cell_quad(lane, u0, u1, 0.05)
+				draw_colored_polygon(quad, Color(color, fade))
+				draw_line(quad[3], quad[2], Color(color.lightened(0.5), fade), 2.0)
+			else:
+				_draw_hold_cell(lane, u0, u1, Color(color, 0.6 * fade), grid.run_length(id, frame) >= SequenceInput.HOLD_MIN_FRAMES)
+
+	# End of the sequence.
+	var end_depths := _row_depths(end_frame)
+	if end_depths.x >= _bottom_u and end_depths.x <= 1.0:
+		draw_line(_project(-1.0, end_depths.x), _project(1.0, end_depths.x), END_COLOR, 2.0)
+		var at := _project(1.0, end_depths.x)
+		draw_string(font, Vector2(at.x + 8.0, at.y + 5.0), "END", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, END_COLOR)
+
+	# Cursor row (the hit line) and hovered cell.
+	var cursor := _row_depths(view)
+	draw_polyline(_closed(_quad(-1.0, 1.0, maxf(cursor.x, _bottom_u), cursor.y)), Color(1, 1, 1, 0.7), 2.0, true)
+	if _hover.x >= 0:
+		var hover := _row_depths(_hover.y)
+		if hover.y > _bottom_u and hover.x < 1.0:
+			var quad := _cell_quad(_hover.x, maxf(hover.x, _bottom_u), minf(hover.y, 1.0), 0.0)
+			draw_polyline(_closed(quad), Color(1, 0.9, 0.4, 0.9), 2.0, true)
+
+
+## A narrow bar for a held cell. Holds too short to count are drawn dimmer.
+func _draw_hold_cell(lane: int, u0: float, u1: float, color: Color, long_enough: bool) -> void:
+	if not long_enough:
+		color.a *= 0.45
+	var half := HOLD_BAR_WIDTH / _lane_count
+	var center := _lane_center(lane)
+	draw_colored_polygon(_quad(center - half, center + half, u0, u1), color)
+
+
+func _cell_quad(lane: int, u0: float, u1: float, pad: float) -> PackedVector2Array:
+	return _quad(_lane_edge(lane) + pad, _lane_edge(lane + 1) - pad, u0, u1)
+
+
+func _direction_start(frame: int) -> int:
+	var grid := editor.grid
+	var direction := grid.get_direction(frame)
+	while frame > 0 and grid.get_direction(frame - 1) == direction:
+		frame -= 1
+	return frame
+
+
+static func _closed(points: PackedVector2Array) -> PackedVector2Array:
+	var closed := points.duplicate()
+	closed.append(points[0])
+	return closed
 
 
 # --- Feedback --------------------------------------------------------------------
