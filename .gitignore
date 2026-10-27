@@ -5,3 +5,6 @@
 # Exported builds
 build/
 builds/
+
+# Personal Claude Code settings
+.claude/settings.local.json
