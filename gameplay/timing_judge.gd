@@ -2,12 +2,12 @@ class_name TimingJudge
 extends RefCounted
 ## Turns a sequence into per-lane targets and judges presses against them.
 ##
-## Lanes: direction, G, P, K. A direction target is created when a note's
-## direction differs from the previous note's (NEUTRAL is never a target, but
+## Lanes: direction, G, P, K. A direction target is created when an input's
+## direction differs from the previous input's (NEUTRAL is never a target, but
 ## it still counts as "different", so FORWARD, NEUTRAL, FORWARD = 2 targets).
-## A button target is created for each button pressed in a note.
+## A button target is created for each button pressed in an input.
 ##
-## Hold targets (hold > 0) are scored twice: the press like any note, then
+## Hold targets (hold > 0) are scored twice: the press like any input, then
 ## the release. Letting go before the end (minus HOLD_RELEASE_GRACE) drops it.
 ##
 ## Match rate = points earned / (items judged + extra button presses).
@@ -20,7 +20,7 @@ enum Rating { PERFECT, GREAT, GOOD, MISS }
 enum HoldResult { NONE = -1, OK, DROPPED }
 
 const FRAME := 1.0 / 60.0
-## Max distance from the note time (seconds) for each rating.
+## Max distance from the input time (seconds) for each rating.
 const PERFECT_WINDOW := 2.0 * FRAME
 const GREAT_WINDOW := 4.0 * FRAME
 const GOOD_WINDOW := 6.0 * FRAME
@@ -35,15 +35,15 @@ const BUTTON_LANES := {"G": Lane.GUARD, "P": Lane.PUNCH, "K": Lane.KICK}
 class Target:
 	var lane: Lane
 	var time: float
-	## Hold length in seconds; 0 for a normal note.
+	## Hold length in seconds; 0 for a normal input.
 	var hold := 0.0
 	## Only used in the direction lane.
 	var direction := ""
 	## -1 until judged, then a Rating.
 	var rating := -1
-	## Input time minus note time (negative = early).
+	## Press time minus target time (negative = early).
 	var offset := 0.0
-	## True while a hit hold note is being held.
+	## True while a hit hold input is being held.
 	var holding := false
 	var hold_result := HoldResult.NONE
 
@@ -65,7 +65,7 @@ class Target:
 
 ## Sorted by time.
 var targets: Array[Target] = []
-## Loop length: the sequence duration, or long enough to judge the last note.
+## Loop length: the sequence duration, or long enough to judge the last input.
 var end_time := 0.0
 var earned := 0.0
 var judged := 0
@@ -87,14 +87,14 @@ func _init(sequence: InputSequence) -> void:
 
 static func build_targets(sequence: InputSequence) -> Array[Target]:
 	var list: Array[Target] = []
-	var previous_direction := InputNote.NEUTRAL
-	for note in sequence.notes:
-		if note.direction != previous_direction and note.direction != InputNote.NEUTRAL:
-			list.append(Target.new(Lane.DIRECTION, note.timestamp, note.direction_hold, note.direction))
-		previous_direction = note.direction
-		for button in note.buttons:
+	var previous_direction := SequenceInput.NEUTRAL
+	for input in sequence.inputs:
+		if input.direction != previous_direction and input.direction != SequenceInput.NEUTRAL:
+			list.append(Target.new(Lane.DIRECTION, input.timestamp, input.direction_hold, input.direction))
+		previous_direction = input.direction
+		for button in input.buttons:
 			if BUTTON_LANES.has(button):
-				list.append(Target.new(BUTTON_LANES[button], note.timestamp, note.get_button_hold(button)))
+				list.append(Target.new(BUTTON_LANES[button], input.timestamp, input.get_button_hold(button)))
 	list.sort_custom(func(a: Target, b: Target) -> bool: return a.time < b.time)
 	return list
 

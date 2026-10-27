@@ -1,70 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <InputSequence name="VF5R-JEA-BNB-6K" author="Momokwai" duration="2.018">
-    <InputNote timestamp="0.000" frame="0">
+    <Input timestamp="0.000" frame="0">
         <Direction>FORWARD</Direction>
         <Buttons></Buttons>
-    </InputNote>
-    <InputNote timestamp="0.067" frame="4">
+    </Input>
+    <Input timestamp="0.067" frame="4">
         <Direction>FORWARD</Direction>
         <Buttons>
             <Button>K</Button>
         </Buttons>
-    </InputNote>
-    <InputNote timestamp="0.184" frame="11">
+    </Input>
+    <Input timestamp="0.184" frame="11">
         <Direction>NEUTRAL</Direction>
         <Buttons></Buttons>
-    </InputNote>
-    <InputNote timestamp="0.819" frame="49">
+    </Input>
+    <Input timestamp="0.819" frame="49">
         <Direction>NEUTRAL</Direction>
         <Buttons>
             <Button>P</Button>
         </Buttons>
-    </InputNote>
-    <InputNote timestamp="1.051" frame="63">
+    </Input>
+    <Input timestamp="1.051" frame="63">
         <Direction>DOWN</Direction>
         <Buttons></Buttons>
-    </InputNote>
-    <InputNote timestamp="1.069" frame="64">
+    </Input>
+    <Input timestamp="1.069" frame="64">
         <Direction>DOWN</Direction>
         <Buttons>
             <Button>K</Button>
         </Buttons>
-    </InputNote>
-    <InputNote timestamp="1.086" frame="65">
+    </Input>
+    <Input timestamp="1.086" frame="65">
         <Direction>DOWN</Direction>
         <Buttons>
             <Button>P</Button>
         </Buttons>
-    </InputNote>
-    <InputNote timestamp="1.267" frame="76">
+    </Input>
+    <Input timestamp="1.267" frame="76">
         <Direction>NEUTRAL</Direction>
         <Buttons></Buttons>
-    </InputNote>
-    <InputNote timestamp="1.533" frame="92">
+    </Input>
+    <Input timestamp="1.533" frame="92">
         <Direction>BACK</Direction>
         <Buttons></Buttons>
-    </InputNote>
-    <InputNote timestamp="1.669" frame="100">
+    </Input>
+    <Input timestamp="1.669" frame="100">
         <Direction>DOWN</Direction>
         <Buttons></Buttons>
-    </InputNote>
-    <InputNote timestamp="1.701" frame="102">
+    </Input>
+    <Input timestamp="1.701" frame="102">
         <Direction>DOWN_FORWARD</Direction>
         <Buttons></Buttons>
-    </InputNote>
-    <InputNote timestamp="1.718" frame="103">
+    </Input>
+    <Input timestamp="1.718" frame="103">
         <Direction>FORWARD</Direction>
         <Buttons></Buttons>
-    </InputNote>
-    <InputNote timestamp="1.818" frame="109">
+    </Input>
+    <Input timestamp="1.818" frame="109">
         <Direction>FORWARD</Direction>
         <Buttons>
             <Button>P</Button>
             <Button>K</Button>
         </Buttons>
-    </InputNote>
-    <InputNote timestamp="1.884" frame="113">
+    </Input>
+    <Input timestamp="1.884" frame="113">
         <Direction>NEUTRAL</Direction>
         <Buttons></Buttons>
-    </InputNote>
+    </Input>
 </InputSequence>

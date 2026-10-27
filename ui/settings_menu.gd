@@ -143,12 +143,12 @@ func _build_preferences() -> void:
 	_ui_sounds_check.toggled.connect(func(on: bool) -> void: _set_pref("audio", "ui_sounds", on))
 	_add_pref_row("", _ui_sounds_check)
 
-	# Seconds for a note to reach the hit line: lower = faster notes.
+	# Seconds for an input to reach the hit line: lower = faster inputs.
 	_scroll_slider.min_value = 0.5
 	_scroll_slider.max_value = 2.5
 	_scroll_slider.step = 0.1
 	_scroll_slider.value_changed.connect(func(value: float) -> void: _set_pref("gameplay", "scroll_time", value))
-	_add_pref_row("Note scroll time", _slider_row(_scroll_slider, _scroll_value))
+	_add_pref_row("Input scroll time", _slider_row(_scroll_slider, _scroll_value))
 
 	_side_option.add_item("Player 1 (facing right)")
 	_side_option.add_item("Player 2 (facing left)")

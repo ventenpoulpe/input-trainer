@@ -3,13 +3,13 @@ extends RefCounted
 ## Reads and writes InputSequence XML files:
 ##
 ##   <InputSequence name="..." author="..." duration="4.5">
-##       <InputNote timestamp="0.30" frame="18">
+##       <Input timestamp="0.30" frame="18">
 ##           <Direction hold="0.400" holdFrames="24">DOWN_FORWARD</Direction>
 ##           <Buttons><Button>P</Button><Button hold="0.300" holdFrames="18">G</Button></Buttons>
-##       </InputNote>
+##       </Input>
 ##   </InputSequence>
 ##
-## `hold` (seconds) is optional and marks a hold note; `holdFrames` is only
+## `hold` (seconds) is optional and marks a hold input; `holdFrames` is only
 ## written for readability. Files without holds use the original schema.
 
 ## Description of the last load/save failure.
@@ -34,17 +34,17 @@ static func to_xml(sequence: InputSequence) -> String:
 	lines.append('<InputSequence name="%s" author="%s" duration="%s">' % [
 		sequence.name.xml_escape(true), sequence.author.xml_escape(true), _format_time(sequence.duration),
 	])
-	for note in sequence.notes:
-		lines.append('    <InputNote timestamp="%s" frame="%d">' % [_format_time(note.timestamp), note.frame])
-		lines.append("        <Direction%s>%s</Direction>" % [_hold_attributes(note.direction_hold), note.direction])
-		if note.buttons.is_empty():
+	for input in sequence.inputs:
+		lines.append('    <Input timestamp="%s" frame="%d">' % [_format_time(input.timestamp), input.frame])
+		lines.append("        <Direction%s>%s</Direction>" % [_hold_attributes(input.direction_hold), input.direction])
+		if input.buttons.is_empty():
 			lines.append("        <Buttons></Buttons>")
 		else:
 			lines.append("        <Buttons>")
-			for button in note.buttons:
-				lines.append("            <Button%s>%s</Button>" % [_hold_attributes(note.get_button_hold(button)), button])
+			for button in input.buttons:
+				lines.append("            <Button%s>%s</Button>" % [_hold_attributes(input.get_button_hold(button)), button])
 			lines.append("        </Buttons>")
-		lines.append("    </InputNote>")
+		lines.append("    </Input>")
 	lines.append("</InputSequence>")
 	return "\n".join(lines) + "\n"
 
@@ -73,7 +73,7 @@ static func parse_string(xml: String, fallback_name := "") -> InputSequence:
 
 static func _parse(parser: XMLParser, fallback_name: String) -> InputSequence:
 	var sequence: InputSequence = null
-	var note: InputNote = null
+	var input: SequenceInput = null
 	var duration := -1.0
 	var text_tag := ""  # "Direction" or "Button" while reading its text
 	var text := ""
@@ -98,23 +98,23 @@ static func _parse(parser: XMLParser, fallback_name: String) -> InputSequence:
 						var duration_text := _attr(parser, "duration", "")
 						if duration_text.is_valid_float():
 							duration = duration_text.to_float()
-					"InputNote":
+					"Input", "InputNote":  # InputNote: tag used by older files
 						if sequence == null:
-							last_error = "<InputNote> outside <InputSequence> (line %d)." % parser.get_current_line()
+							last_error = "<Input> outside <InputSequence> (line %d)." % parser.get_current_line()
 							return null
-						note = _start_note(parser)
-						if note == null:
+						input = _start_input(parser)
+						if input == null:
 							return null
 						if parser.is_empty():
-							sequence.notes.append(note)
-							note = null
+							sequence.inputs.append(input)
+							input = null
 					"Direction", "Button":
 						text_tag = tag
 						text = ""
 						var hold_text := _attr(parser, "hold", "")
 						hold = maxf(hold_text.to_float(), 0.0) if hold_text.is_valid_float() else 0.0
 						if parser.is_empty():
-							_apply_text(note, tag, "", hold, parser.get_current_line())
+							_apply_text(input, tag, "", hold, parser.get_current_line())
 							text_tag = ""
 			XMLParser.NODE_TEXT, XMLParser.NODE_CDATA:
 				if text_tag:
@@ -123,53 +123,53 @@ static func _parse(parser: XMLParser, fallback_name: String) -> InputSequence:
 				var tag := parser.get_node_name()
 				match tag:
 					"Direction", "Button":
-						_apply_text(note, tag, text.strip_edges().xml_unescape(), hold, parser.get_current_line())
+						_apply_text(input, tag, text.strip_edges().xml_unescape(), hold, parser.get_current_line())
 						text_tag = ""
-					"InputNote":
-						if note != null:
-							note.buttons = InputNote.sort_buttons(note.buttons)
-							sequence.notes.append(note)
-							note = null
+					"Input", "InputNote":  # InputNote: tag used by older files
+						if input != null:
+							input.buttons = SequenceInput.sort_buttons(input.buttons)
+							sequence.inputs.append(input)
+							input = null
 
 	if sequence == null:
 		last_error = "No <InputSequence> element found."
 		return null
 
-	sequence.notes.sort_custom(func(a: InputNote, b: InputNote) -> bool: return a.timestamp < b.timestamp)
+	sequence.inputs.sort_custom(func(a: SequenceInput, b: SequenceInput) -> bool: return a.timestamp < b.timestamp)
 	var last_end := 0.0
-	for each in sequence.notes:
+	for each in sequence.inputs:
 		last_end = maxf(last_end, each.get_end_time())
 	sequence.duration = maxf(duration, last_end)
 	return sequence
 
 
-static func _start_note(parser: XMLParser) -> InputNote:
+static func _start_input(parser: XMLParser) -> SequenceInput:
 	var time_text := _attr(parser, "timestamp", "")
 	if not time_text.is_valid_float():
-		last_error = "<InputNote> needs a numeric timestamp (line %d)." % parser.get_current_line()
+		last_error = "<Input> needs a numeric timestamp (line %d)." % parser.get_current_line()
 		return null
-	var note := InputNote.new(time_text.to_float())
+	var input := SequenceInput.new(time_text.to_float())
 	var frame_text := _attr(parser, "frame", "")
 	if frame_text.is_valid_int():
-		note.frame = frame_text.to_int()
-	return note
+		input.frame = frame_text.to_int()
+	return input
 
 
-static func _apply_text(note: InputNote, tag: String, value: String, hold: float, line: int) -> void:
-	if note == null:
+static func _apply_text(input: SequenceInput, tag: String, value: String, hold: float, line: int) -> void:
+	if input == null:
 		return
 	var token := value.to_upper()
 	if tag == "Direction":
-		if token in InputNote.DIRECTIONS:
-			note.direction = token
-			note.direction_hold = hold if token != InputNote.NEUTRAL else 0.0
+		if token in SequenceInput.DIRECTIONS:
+			input.direction = token
+			input.direction_hold = hold if token != SequenceInput.NEUTRAL else 0.0
 		else:
 			push_warning("Unknown direction '%s' on line %d, using NEUTRAL." % [value, line])
-			note.direction = InputNote.NEUTRAL
-	elif token in InputNote.BUTTONS:
-		note.buttons.append(token)
+			input.direction = SequenceInput.NEUTRAL
+	elif token in SequenceInput.BUTTONS:
+		input.buttons.append(token)
 		if hold > 0.0:
-			note.button_holds[token] = hold
+			input.button_holds[token] = hold
 	else:
 		push_warning("Unknown button '%s' on line %d, skipped." % [value, line])
 
@@ -177,7 +177,7 @@ static func _apply_text(note: InputNote, tag: String, value: String, hold: float
 static func _hold_attributes(hold: float) -> String:
 	if hold <= 0.0:
 		return ""
-	return ' hold="%s" holdFrames="%d"' % [_format_time(hold), InputNote.time_to_frame(hold)]
+	return ' hold="%s" holdFrames="%d"' % [_format_time(hold), SequenceInput.time_to_frame(hold)]
 
 
 static func _attr(parser: XMLParser, attribute: String, default: String) -> String:

@@ -46,7 +46,7 @@ func _ready() -> void:
 	SequenceManager.sequence_changed.connect(_on_sequence_changed)
 	_gameplay.state_changed.connect(_on_play_state_changed)
 	_gameplay.best_score_changed.connect(_on_best_score_changed)
-	_gameplay.note_judged.connect(func(target: TimingJudge.Target) -> void: Sfx.play(RATING_SOUNDS[target.rating]))
+	_gameplay.input_judged.connect(func(target: TimingJudge.Target) -> void: Sfx.play(RATING_SOUNDS[target.rating]))
 	_gameplay.hold_finished.connect(_on_hold_finished)
 	_gameplay.extra_press.connect(func(_lane: TimingJudge.Lane) -> void: Sfx.play(&"extra"))
 	_gameplay.loop_finished.connect(func(_rate: float, is_new_best: bool) -> void: Sfx.play(&"new_best" if is_new_best else &"loop_end"))
@@ -148,7 +148,7 @@ func _on_load_file_selected(path: String) -> void:
 	if error:
 		_set_status(error)
 	else:
-		_set_status("Loaded %s (%d notes). Press PLAY (Space / L3)." % [path.get_file(), SequenceManager.current_sequence.notes.size()])
+		_set_status("Loaded %s (%d inputs). Press PLAY (Space / L3)." % [path.get_file(), SequenceManager.current_sequence.inputs.size()])
 
 
 func _open_save_dialog() -> void:
@@ -229,14 +229,14 @@ func _on_sequence_changed() -> void:
 	_file_label.text = "FILE: " + (path.get_file() if path else "(unsaved recording)")
 	_show_time(sequence.duration)
 	if not path:
-		_set_status("Recorded %d notes (%.2f s). Press PLAY to practice or SAVE XML to keep it." % [
-			sequence.notes.size(), sequence.duration,
+		_set_status("Recorded %d inputs (%.2f s). Press PLAY to practice or SAVE XML to keep it." % [
+			sequence.inputs.size(), sequence.duration,
 		])
 
 
 func _show_time(seconds: float) -> void:
 	_time_label.text = "TIME: %.2f s" % seconds
-	_frame_label.text = "FRAME: %d f" % InputNote.time_to_frame(seconds)
+	_frame_label.text = "FRAME: %d f" % SequenceInput.time_to_frame(seconds)
 
 
 func _set_status(text: String) -> void:

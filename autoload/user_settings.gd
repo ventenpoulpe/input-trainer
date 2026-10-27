@@ -18,7 +18,7 @@ const PREFERENCE_DEFAULTS := {
 		"ui_sounds": true,
 	},
 	"gameplay": {
-		"scroll_time": 1.2,  # seconds for a note to reach the hit line
+		"scroll_time": 1.2,  # seconds for an input to reach the hit line
 		"facing_right": true,  # player 1 side
 	},
 }

@@ -3,15 +3,15 @@ extends Node
 ## Runs the practice loop for the current sequence:
 ## STOPPED -> COUNTDOWN (1 s) -> PLAYING -> LOOP_PAUSE (0.5 s) -> PLAYING -> ...
 ##
-## The clock is "sequence time": 0 is the first note. Each loop starts at
-## -lead_time so the first notes have time to scroll down to the hit line.
+## The clock is "sequence time": 0 is the first input. Each loop starts at
+## -lead_time so the first inputs have time to scroll down to the hit line.
 
 signal state_changed(state: State)
 signal loop_started(loop_number: int)
-signal note_judged(target: TimingJudge.Target)
-## A hold note was released or held to its end; see target.hold_result.
+signal input_judged(target: TimingJudge.Target)
+## A hold input was released or held to its end; see target.hold_result.
 signal hold_finished(target: TimingJudge.Target)
-## A button press that didn't match any note.
+## A button press that didn't match any expected input.
 signal extra_press(lane: TimingJudge.Lane)
 signal loop_finished(rate: float, is_new_best: bool)
 ## -1 means no best score yet.
@@ -22,7 +22,7 @@ enum State { STOPPED, COUNTDOWN, PLAYING, LOOP_PAUSE }
 const COUNTDOWN_TIME := 1.0
 const LOOP_PAUSE_TIME := 0.5
 
-## Seconds a note takes to scroll from the far end to the hit line.
+## Seconds an input takes to scroll from the far end to the hit line.
 ## Read from the "scroll_time" preference when a run starts.
 var lead_time := 1.2
 var state := State.STOPPED
@@ -34,7 +34,7 @@ var last_rate := -1.0
 
 var _state_start_usec := 0
 var _loop_start_usec := 0
-var _last_direction := InputNote.NEUTRAL
+var _last_direction := SequenceInput.NEUTRAL
 var _last_buttons := PackedStringArray()
 
 
@@ -55,7 +55,7 @@ func start() -> String:
 		return "Load or record a sequence first."
 	var new_judge := TimingJudge.new(current)
 	if new_judge.targets.is_empty():
-		return "This sequence has no notes to play."
+		return "This sequence has no inputs to play."
 	sequence = current
 	judge = new_judge
 	lead_time = UserSettings.get_pref("gameplay", "scroll_time")
@@ -70,7 +70,7 @@ func stop() -> void:
 		_set_state(State.STOPPED)
 
 
-## Current sequence time in seconds (-lead_time before the first note scrolls in).
+## Current sequence time in seconds (-lead_time before the first input scrolls in).
 func get_time() -> float:
 	if state != State.PLAYING:
 		return -lead_time
@@ -103,7 +103,7 @@ func _process(_delta: float) -> void:
 		State.PLAYING:
 			var time := get_time()
 			for target in judge.update_misses(time):
-				note_judged.emit(target)
+				input_judged.emit(target)
 			for target in judge.update_holds(time):
 				hold_finished.emit(target)
 			if time >= judge.end_time:
@@ -120,10 +120,10 @@ func _input(event: InputEvent) -> void:
 		_last_direction = direction
 		# Leaving a direction ends its hold before the new one is judged.
 		_emit_release(judge.release(TimingJudge.Lane.DIRECTION, time))
-		if direction != InputNote.NEUTRAL:
+		if direction != SequenceInput.NEUTRAL:
 			var hit := judge.press_direction(direction, time)
 			if hit:
-				note_judged.emit(hit)
+				input_judged.emit(hit)
 
 	var held := SequenceManager.read_held_buttons()
 	for button in _last_buttons:
@@ -135,7 +135,7 @@ func _input(event: InputEvent) -> void:
 		var lane: TimingJudge.Lane = TimingJudge.BUTTON_LANES[button]
 		var hit := judge.press_button(lane, time)
 		if hit:
-			note_judged.emit(hit)
+			input_judged.emit(hit)
 		else:
 			extra_press.emit(lane)
 	_last_buttons = held

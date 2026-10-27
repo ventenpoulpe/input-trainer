@@ -1,7 +1,7 @@
 class_name Highway
 extends Control
 ## Draws the 4-lane perspective highway for a GameplayController: lanes,
-## scrolling notes and hold bars, the hit line with its receptors, and hit
+## scrolling inputs and hold bars, the hit line with its receptors, and hit
 ## feedback (popup text, GPU spark particles, flashes).
 ##
 ## Everything is drawn in 2D with a simple perspective projection. Depth `u`
@@ -85,7 +85,7 @@ func _ready() -> void:
 
 func setup(p_controller: GameplayController) -> void:
 	controller = p_controller
-	controller.note_judged.connect(_on_note_judged)
+	controller.input_judged.connect(_on_input_judged)
 	controller.hold_finished.connect(_on_hold_finished)
 	controller.extra_press.connect(_on_extra_press)
 	controller.loop_finished.connect(_on_loop_finished)
@@ -151,7 +151,7 @@ func _receptor_radius() -> float:
 	return _half_width / LANE_COUNT * 0.42
 
 
-## Notes fade in over the last part of the track.
+## Inputs fade in over the last part of the track.
 static func _far_fade(u: float) -> float:
 	return clampf((1.0 - u) / 0.12, 0.0, 1.0)
 
@@ -164,7 +164,7 @@ func _draw() -> void:
 		return
 	_draw_track()
 	if controller and controller.state == PlayState.PLAYING:
-		_draw_notes(controller.get_time())
+		_draw_inputs(controller.get_time())
 	_draw_hit_line()
 	_draw_receptors()
 	_draw_headers()
@@ -192,9 +192,9 @@ func _draw_track() -> void:
 			step += 1
 
 
-func _draw_notes(time: float) -> void:
+func _draw_inputs(time: float) -> void:
 	var targets := controller.judge.targets
-	# Latest first, so nearer notes are drawn on top.
+	# Latest first, so nearer inputs are drawn on top.
 	for i in range(targets.size() - 1, -1, -1):
 		var target := targets[i]
 		var u := (target.time - time) / controller.lead_time
@@ -205,7 +205,7 @@ func _draw_notes(time: float) -> void:
 			_draw_hold_bar(target, u, tail_u)
 		var hit := target.is_judged() and target.rating != Rating.MISS
 		if not hit:
-			_draw_note(target, u)
+			_draw_input(target, u)
 
 
 func _draw_hold_bar(target: TimingJudge.Target, u: float, tail_u: float) -> void:
@@ -236,7 +236,7 @@ func _draw_hold_bar(target: TimingJudge.Target, u: float, tail_u: float) -> void
 		draw_line(points[3], points[2], Color(color, far.a * 1.5), 3.0)
 
 
-func _draw_note(target: TimingJudge.Target, u: float) -> void:
+func _draw_input(target: TimingJudge.Target, u: float) -> void:
 	var missed := target.rating == Rating.MISS
 	var color: Color = MISSED_COLOR if missed else LANE_COLORS[target.lane]
 	color.a = _far_fade(u) * (0.6 if missed else 1.0)
@@ -284,7 +284,7 @@ func _draw_receptors() -> void:
 	for lane in LANE_COUNT:
 		var center := _project(_lane_center(lane), 0.0)
 		var color: Color = LANE_COLORS[lane]
-		var pressed := direction != InputNote.NEUTRAL if lane == Lane.DIRECTION else held.has(LANE_LETTERS[lane])
+		var pressed := direction != SequenceInput.NEUTRAL if lane == Lane.DIRECTION else held.has(LANE_LETTERS[lane])
 		if playing and controller.judge.is_holding(lane):
 			# Pulsing glow while a hold is being kept.
 			var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 60.0)
@@ -344,7 +344,7 @@ func _draw_message() -> void:
 
 # --- Feedback --------------------------------------------------------------------
 
-func _on_note_judged(target: TimingJudge.Target) -> void:
+func _on_input_judged(target: TimingJudge.Target) -> void:
 	var rating: Rating = target.rating
 	var text: String = TimingJudge.RATING_TEXT[rating]
 	if rating != Rating.MISS:

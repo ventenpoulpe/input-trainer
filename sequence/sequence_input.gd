@@ -1,14 +1,14 @@
-class_name InputNote
+class_name SequenceInput
 extends RefCounted
 ## One moment in a sequence: the direction held at that moment plus the
 ## buttons newly pressed at that moment.
 ##
 ## `direction` is always the full held direction, so it can repeat between
-## notes (e.g. holding DOWN_FORWARD while pressing P, then K). Compare with
-## the previous note to tell a new direction from a held one.
+## inputs (e.g. holding DOWN_FORWARD while pressing P, then K). Compare with
+## the previous input to tell a new direction from a held one.
 ##
-## Hold notes: an input kept down for at least HOLD_MIN_FRAMES gets a hold
-## length (seconds) on the note where it was pressed: `direction_hold` for
+## Hold inputs: a direction or button kept down for at least HOLD_MIN_FRAMES gets a hold
+## length (seconds) on the input where it was pressed: `direction_hold` for
 ## the direction, `button_holds["P"]` etc. for buttons. 0 = a normal tap.
 
 const FPS := 60.0
@@ -43,7 +43,7 @@ func get_button_hold(button: String) -> float:
 	return button_holds.get(button, 0.0)
 
 
-## Time the last input of this note is released.
+## Time the last direction or button of this input is released.
 func get_end_time() -> float:
 	var longest := direction_hold
 	for button: String in button_holds:

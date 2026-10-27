@@ -3,38 +3,38 @@ extends RefCounted
 ## Turns a stream of input states into an InputSequence.
 ##
 ## arm() waits for the first new press; that press is t = 0.0 s / frame 0.
-## After that, every direction change or new button press becomes a note.
-## Changes less than one frame apart are merged into one note, so a diagonal
-## or a P+G pressed "together" is recorded as a single note.
-## Inputs held for at least InputNote.HOLD_MIN_FRAMES become hold notes.
+## After that, every direction change or new button press becomes an input.
+## Changes less than one frame apart are merged into one input, so a diagonal
+## or a P+G pressed "together" is recorded as a single input.
+## Directions or buttons held for at least SequenceInput.HOLD_MIN_FRAMES become hold inputs.
 
 enum State { IDLE, ARMED, RECORDING }
 
 const MERGE_WINDOW_USEC := 16_667  # one frame at 60 FPS
 
 var state := State.IDLE
-var notes: Array[InputNote] = []
+var inputs: Array[SequenceInput] = []
 
 var _start_usec := 0
-var _last_note_usec := 0
+var _last_input_usec := 0
 var _last_change_usec := 0
-var _direction := InputNote.NEUTRAL
+var _direction := SequenceInput.NEUTRAL
 var _held := PackedStringArray()
-## Button -> the note it was pressed on, while it is held.
-var _held_button_notes := {}
-## The note where the current (non-neutral) direction started, or null.
-var _direction_note: InputNote = null
+## Button -> the input it was pressed on, while it is held.
+var _held_button_inputs := {}
+## The input where the current (non-neutral) direction started, or null.
+var _direction_input: SequenceInput = null
 
 
 ## Starts waiting for the first press. Pass what is currently held so inputs
 ## that were already down don't count as presses.
 func arm(direction: String, held_buttons: PackedStringArray) -> void:
 	state = State.ARMED
-	notes = []
+	inputs = []
 	_direction = direction
 	_held = held_buttons
-	_held_button_notes.clear()
-	_direction_note = null
+	_held_button_inputs.clear()
+	_direction_input = null
 
 
 ## Feeds the current input state. Call whenever an input changes.
@@ -57,7 +57,7 @@ func update(direction: String, held_buttons: PackedStringArray, now_usec: int) -
 	var starting := false
 	if state == State.ARMED:
 		# Only a press starts the clock, not letting go of something held.
-		var is_press := not pressed.is_empty() or (direction_changed and direction != InputNote.NEUTRAL)
+		var is_press := not pressed.is_empty() or (direction_changed and direction != SequenceInput.NEUTRAL)
 		if not is_press:
 			return
 		state = State.RECORDING
@@ -74,11 +74,11 @@ func update(direction: String, held_buttons: PackedStringArray, now_usec: int) -
 			return
 
 	_last_change_usec = now_usec
-	var note := _add_note(direction, pressed, now_usec)
+	var input := _add_input(direction, pressed, now_usec)
 	for button in pressed:
-		_held_button_notes[button] = note
-	if direction != InputNote.NEUTRAL and (direction_changed or starting):
-		_direction_note = note
+		_held_button_inputs[button] = input
+	if direction != SequenceInput.NEUTRAL and (direction_changed or starting):
+		_direction_input = input
 
 
 ## Seconds since the first press (0 while armed or idle).
@@ -93,53 +93,53 @@ func stop(now_usec := -1) -> InputSequence:
 		now_usec = Time.get_ticks_usec()
 	var was_recording := state == State.RECORDING
 	state = State.IDLE
-	if not was_recording or notes.is_empty():
-		notes = []
+	if not was_recording or inputs.is_empty():
+		inputs = []
 		return null
 
-	for button: String in _held_button_notes.keys():
+	for button: String in _held_button_inputs.keys():
 		_end_button_hold(button, now_usec)
 	_end_direction_hold(now_usec)
 
 	var sequence := InputSequence.new()
-	sequence.notes = notes
+	sequence.inputs = inputs
 	sequence.duration = _seconds(_last_change_usec)
-	for note in notes:
-		sequence.duration = maxf(sequence.duration, note.get_end_time())
-	notes = []
+	for input in inputs:
+		sequence.duration = maxf(sequence.duration, input.get_end_time())
+	inputs = []
 	return sequence
 
 
-func _add_note(direction: String, pressed: PackedStringArray, now_usec: int) -> InputNote:
-	if not notes.is_empty() and now_usec - _last_note_usec < MERGE_WINDOW_USEC:
-		var last := notes[-1]
+func _add_input(direction: String, pressed: PackedStringArray, now_usec: int) -> SequenceInput:
+	if not inputs.is_empty() and now_usec - _last_input_usec < MERGE_WINDOW_USEC:
+		var last := inputs[-1]
 		last.direction = direction
-		last.buttons = InputNote.sort_buttons(last.buttons + pressed)
+		last.buttons = SequenceInput.sort_buttons(last.buttons + pressed)
 		return last
-	var note := InputNote.new(_seconds(now_usec), direction, pressed)
-	notes.append(note)
-	_last_note_usec = now_usec
-	return note
+	var input := SequenceInput.new(_seconds(now_usec), direction, pressed)
+	inputs.append(input)
+	_last_input_usec = now_usec
+	return input
 
 
 func _end_button_hold(button: String, now_usec: int) -> void:
-	var note: InputNote = _held_button_notes.get(button)
-	_held_button_notes.erase(button)
-	if note == null:
+	var input: SequenceInput = _held_button_inputs.get(button)
+	_held_button_inputs.erase(button)
+	if input == null:
 		return
-	var length := _seconds(now_usec) - note.timestamp
-	if length >= InputNote.HOLD_MIN_SECONDS:
-		note.button_holds[button] = length
+	var length := _seconds(now_usec) - input.timestamp
+	if length >= SequenceInput.HOLD_MIN_SECONDS:
+		input.button_holds[button] = length
 
 
 func _end_direction_hold(now_usec: int) -> void:
-	var note := _direction_note
-	_direction_note = null
-	if note == null:
+	var input := _direction_input
+	_direction_input = null
+	if input == null:
 		return
-	var length := _seconds(now_usec) - note.timestamp
-	if length >= InputNote.HOLD_MIN_SECONDS:
-		note.direction_hold = length
+	var length := _seconds(now_usec) - input.timestamp
+	if length >= SequenceInput.HOLD_MIN_SECONDS:
+		input.direction_hold = length
 
 
 func _seconds(now_usec: int) -> float:

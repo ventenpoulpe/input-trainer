@@ -128,7 +128,7 @@ static func _is_game_event(event: InputEvent) -> bool:
 
 ## The direction currently held, in VF notation.
 func read_direction() -> String:
-	return InputNote.direction_from_state(
+	return SequenceInput.direction_from_state(
 		Input.is_action_pressed(&"vf_up"),
 		Input.is_action_pressed(&"vf_down"),
 		Input.is_action_pressed(&"vf_left"),
