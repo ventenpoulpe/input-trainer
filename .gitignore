@@ -2,7 +2,6 @@
 .godot/
 /android/
 
-# Exported builds (see build.ps1)
+# Exported builds
 build/
-builds/Momokwai_input_trainer.exe
-builds/Sequences/VF5R-JEAN-BNB-6K.xml
+builds/
