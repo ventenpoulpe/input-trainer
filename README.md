@@ -23,6 +23,21 @@ Built with **Godot 4.7**.
 
 ## Getting started
 
+### Download (Windows)
+
+1. Go to the [Releases](../../releases) page and download `InputTrainer-win64.zip`.
+2. Unzip it somewhere you can write to, such as your Desktop, Documents or a games folder.
+   Avoid `C:\Program Files`, since the app saves your recordings next to the `.exe`.
+3. Run `InputTrainer.exe`.
+
+Requires Windows 10 or 11 and a reasonably recent graphics driver (the app uses Direct3D 12).
+
+> [!WARNING]
+> **"Windows protected your PC"**
+> The executable isn't code-signed, so Windows SmartScreen may block it the first time you run it.
+> To start it anyway, click **More info**, then **Run anyway**. You only need to do this once.
+> If you'd rather not, you can [run it from source](#run-from-source) or [build it yourself](#building-the-executable).
+
 ### Run from source
 
 1. Install [Godot 4.7](https://godotengine.org/download) (standard version, not .NET).
@@ -174,6 +189,35 @@ Files using the older `<InputNote>` tag still load.
 
 ---
 
+## Building the executable
+
+The project includes a Windows export preset (`export_presets.cfg`) and a build script (`build.ps1`).
+
+**One-time setup:** open the project in Godot 4.7, then go to **Editor → Manage Export Templates → Download and Install**.
+
+**Build:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build.ps1 -Godot "C:\path\to\Godot_v4.7.2-stable_win64.exe" -Zip
+```
+
+You can also set the `GODOT` environment variable to the Godot path and leave out `-Godot`.
+
+Output in `build/`:
+
+```
+build/
+  InputTrainer.exe          the app (game data embedded)
+  Sequences/                sample sequences, copied from the project
+  InputTrainer-win64.zip    with -Zip: ready to attach to a GitHub Release
+```
+
+Rebuilding keeps any recordings already saved in `build/Sequences`.
+
+You can also export from the editor with **Project → Export… → Windows Desktop → Export Project**. In that case, copy the `Sequences` folder next to the `.exe` yourself.
+
+---
+
 ## Project structure
 
 ```
@@ -183,6 +227,8 @@ sequence/      Sequence data, recorder and XML reader/writer
 ui/            Highway, countdown, device selector, save dialog, settings menu
 Sequences/     Sequence XML files
 main.tscn      Main screen
+build.ps1      Builds the Windows executable (see above)
+export_presets.cfg  Godot export settings
 specs.md       Full technical and functional specification
 ```
 

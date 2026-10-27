@@ -1,3 +1,8 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Exported builds (see build.ps1)
+build/
+builds/Momokwai_input_trainer.exe
+builds/Sequences/VF5R-JEAN-BNB-6K.xml
