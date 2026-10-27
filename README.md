@@ -62,11 +62,11 @@ Pick your game in the **Mode** dropdown in the toolbar. The highway, the title a
 
 Each sequence file remembers the mode it was recorded in. If you load a sequence made for another mode, an orange warning appears under the timers on the right, and the sequence can't be played until you either switch to the matching mode or load a sequence for the current one.
 
-### Recording a combo
+### Recording a sequence
 
 1. Press **Backspace** (keyboard) or **R3** (controller), or click **RECORD**.
    The screen shows **ARMED**: nothing is recorded yet.
-2. Perform your combo. **Your first press is time zero.** The recording uses the current mode.
+2. Perform your sequence. **Your first press is time zero.** The recording uses the current mode.
 3. Press **Backspace** / **R3** again to stop.
 4. Click **SAVE XML**, give it a name, and it's saved to the `Sequences` folder.
 
