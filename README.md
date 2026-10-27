@@ -6,6 +6,8 @@ Record a combo (or load one), then play it back Guitar Hero style: your inputs s
 
 Built with **Godot 4.7**.
 
+![Practicing Daigo's EVO 2004 parry sequence in SF mode](docs/screenshots/mode_sf.png)
+
 ---
 
 ## Features
@@ -47,6 +49,15 @@ Requires Windows 10 or 11 and a reasonably recent graphics driver (the app uses 
 3. After a short countdown, hit each input as it crosses the line at the bottom of the track.
 4. Press **Space** / **L3** again to stop.
 
+### Included sequences
+
+| File | Mode | What it is |
+|---|---|---|
+| `VF5R-JEA-BNB-6K` | VF | A Jean Kujo bread-and-butter combo starting with 6K (Virtua Fighter 5 R.E.V.O.) |
+| `SF3-EVO2004-Daigo-Parry` | SF | Daigo's famous EVO 2004 parry of Chun-Li's super, then his punish combo into Shippu Jinrai-kyaku. The timing is reconstructed by hand, so it's close but not frame data from the match. |
+
+Switch **Mode** to **SF MODE** before loading the Daigo sequence.
+
 ---
 
 ## How to use it
@@ -60,6 +71,10 @@ Pick your game in the **Mode** dropdown in the toolbar. The highway, the title a
 | **VF MODE** | Virtua Fighter | **G** Guard, **P** Punch, **K** Kick |
 | **SC2 MODE** | Soul Calibur 2 | **G** Guard, **A** Horizontal, **B** Vertical, **K** Kick |
 | **SF MODE** | Street Fighter (classic) | **LP**, **LK**, **MP**, **MK**, **HP**, **HK** |
+
+| VF MODE | SC2 MODE | SF MODE |
+|---|---|---|
+| ![VF mode](docs/screenshots/playing_vf.png) | ![SC2 mode](docs/screenshots/mode_sc2.png) | ![SF mode](docs/screenshots/mode_sf.png) |
 
 Each sequence file remembers the mode it was recorded in. If you load a sequence made for another mode, an orange warning appears under the timers on the right, and the sequence can't be played until you either switch to the matching mode or load a sequence for the current one.
 
@@ -77,6 +92,8 @@ Each sequence file remembers the mode it was recorded in. If you load a sequence
 ### Editing a sequence frame by frame
 
 Click the **pencil** button in the toolbar to enter edit mode (click it again to leave). It edits the current sequence, or starts a new empty one if none is loaded. The highway then shows one row per frame (60 per second), and the row on the hit line is the **cursor**.
+
+![Edit mode on the Daigo sequence: the dragon punch and super inputs, frame by frame](docs/screenshots/edit_mode.png)
 
 | To do this | Do this |
 |---|---|
@@ -101,9 +118,7 @@ Press **Space** / **L3** or click **PLAY**. A 1-second countdown appears, then i
 
 ### Reading the screen
 
-
-<img width="1591" height="886" alt="image" src="https://github.com/user-attachments/assets/14517430-d480-4f41-8d38-9268d0e0e42b" />
-
+![Playing a VF sequence: three PERFECT hits on the hit line](docs/screenshots/playing_vf.png)
 
 The first lane is always the **direction** lane: press the direction shown by the arrow. The other lanes are your mode's buttons, from left to right:
 
@@ -192,6 +207,9 @@ Controller buttons use Xbox names (A = bottom face button). The keyboard shortcu
 
 1. Select the mode you want to change in the **Mode** dropdown, then open **SETTINGS / REBIND**.
    The menu shows the directions, that mode's buttons and combinations, and the shortcuts.
+
+   ![The settings menu in VF mode](docs/screenshots/settings_vf.png)
+
 2. Click a binding, then press the new key or button within 5 seconds (**Esc** cancels).
 3. If that input was already used by another action in the same mode, the two swap. Different modes can use the same keys.
 4. Click **Save** to keep your changes, **Cancel** to undo them, or **Reset** to restore the defaults (for every mode).
@@ -256,6 +274,7 @@ gameplay/      Practice loop and timing judge (ratings and scoring)
 sequence/      Input modes, sequence data, recorder, frame editor and XML reader/writer
 ui/            Highway, countdown, mode and device selectors, save dialog, settings menu
 Sequences/     Sequence XML files
+docs/          README screenshots
 main.tscn      Main screen
 export_presets.cfg  Godot export settings
 specs.md       Full technical and functional specification
