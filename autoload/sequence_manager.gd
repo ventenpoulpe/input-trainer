@@ -53,15 +53,28 @@ func path_for(file_name: String) -> String:
 	return sequences_dir().path_join(sanitize_file_name(file_name) + ".xml")
 
 
-## Full paths of every .xml file in the sequences folder, sorted by name.
-func list_sequence_files() -> Array[String]:
-	var dir := sequences_dir()
-	var files: Array[String] = []
-	for file in DirAccess.get_files_at(dir):
+## The .xml files of the sequences folder and its subfolders, as a tree:
+## { name, folders: [subtrees], files: [full paths] }, each list sorted by name.
+## Folders with no .xml file anywhere inside are left out, as are hidden ones.
+func sequence_tree(dir := "") -> Dictionary:
+	if dir.is_empty():
+		dir = sequences_dir()
+	var tree := {"name": dir.get_file(), "folders": [], "files": []}
+	var by_name := func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0
+	var folder_names := Array(DirAccess.get_directories_at(dir))
+	folder_names.sort_custom(by_name)
+	for folder: String in folder_names:
+		if folder.begins_with("."):
+			continue
+		var subtree := sequence_tree(dir.path_join(folder))
+		if not subtree.folders.is_empty() or not subtree.files.is_empty():
+			tree.folders.append(subtree)
+	var file_names := Array(DirAccess.get_files_at(dir))
+	file_names.sort_custom(by_name)
+	for file: String in file_names:
 		if file.get_extension().to_lower() == "xml":
-			files.append(dir.path_join(file))
-	files.sort_custom(func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0)
-	return files
+			tree.files.append(dir.path_join(file))
+	return tree
 
 
 ## Strips a trailing .xml and replaces characters not allowed in file names.
@@ -190,7 +203,7 @@ func save_in_place() -> String:
 	if current_sequence == null:
 		return "Nothing to save yet: record or load a sequence first."
 	if current_path.is_empty():
-		return "This sequence has no file yet: use SAVE AS."
+		return "This sequence has no file yet: use Save as."
 	if SequenceXml.save_file(current_sequence, current_path) != OK:
 		return SequenceXml.last_error
 	has_unsaved_edits = false

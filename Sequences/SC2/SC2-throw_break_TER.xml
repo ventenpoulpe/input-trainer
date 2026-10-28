@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InputSequence name="SC2-throw_break_TER" author="Momokwai" mode="SC2" duration="1.717">
+    <Input timestamp="0.000" frame="0">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button>A</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="0.483" frame="29">
+        <Direction>UP</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.550" frame="33">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.167" frame="70">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button>B</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="1.650" frame="99">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.717" frame="103">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+</InputSequence>

@@ -49,6 +49,7 @@ const ARROW := [
 ## Highway width at the far end compared to the hit line.
 const FAR_SCALE := 0.3
 const TOP_MARGIN := 64.0  # room for the lane headers
+const BRUSH_HINT := "Click to pick a direction →"
 const BOTTOM_MARGIN := 48.0  # track continues below the hit line
 const TILE_DEPTH := 0.045
 ## Hold bar width as a fraction of the lane width.
@@ -358,12 +359,26 @@ func _draw_headers() -> void:
 		var color: Color = _lane_colors[lane]
 		if lane == DIRECTION_LANE:
 			_draw_joystick_icon(center, color)
+			if _editing():
+				_draw_brush_hint(font, center)
 		else:
 			var text := _lane_ids[lane]
 			var font_size := 20 if text.length() == 1 else 14
 			draw_circle(center, 16.0, color)
 			draw_string(font, Vector2(center.x - 16.0, center.y + font_size * 0.35), text,
 					HORIZONTAL_ALIGNMENT_CENTER, 32.0, font_size, Color(0.05, 0.05, 0.08))
+
+
+## Edit mode: tells users the joystick icon opens the direction brush menu.
+## Drawn to its left, since the direction lane is always the leftmost one.
+func _draw_brush_hint(font: Font, icon_center: Vector2) -> void:
+	var width := icon_center.x - 28.0
+	if width <= 0.0:
+		return
+	var font_size := 15
+	var at := Vector2(0.0, icon_center.y + font_size * 0.35)
+	draw_string_outline(font, at, BRUSH_HINT, HORIZONTAL_ALIGNMENT_RIGHT, width, font_size, 4, Color(0, 0, 0, 0.5))
+	draw_string(font, at, BRUSH_HINT, HORIZONTAL_ALIGNMENT_RIGHT, width, font_size, Color(1, 1, 1, 0.7))
 
 
 func _draw_joystick_icon(center: Vector2, color: Color) -> void:
@@ -383,7 +398,7 @@ func _draw_message() -> void:
 		elif SequenceManager.is_mode_mismatch():
 			text = "This sequence is for %s" % InputMode.title(SequenceManager.current_sequence.mode)
 		else:
-			text = "Press PLAY (Space / L3) to practice"
+			text = "Press Play (%s) to practice" % InputConfig.get_shortcut_text(&"app_play_toggle")
 	elif controller.state == PlayState.LOOP_PAUSE:
 		text = _pause_text
 	if text:

@@ -38,7 +38,7 @@ The input mode decides the action buttons, the highway lanes, the bindings in us
 
 - **Selection:** a `Mode` dropdown in the toolbar (tooltip: the game's name). The choice is saved immediately to `user://settings.cfg` (`[input] mode`) and restored on startup.
 - **Changing mode:**
-  - Updates the title (`INPUT TRAINER: <MODE>`), the highway lanes and the bindings in use.
+  - Updates the highway lanes and the bindings in use.
   - Stops playback.
   - Ends a recording in progress: it is kept if it started (in the mode it was armed in), or cancelled if only armed.
 - **Combinations:** a combination binding presses all of its buttons at once. Recording and judging see the individual buttons (e.g. the P+K binding records `P` and `K`, and hits a P and a K input).
@@ -176,7 +176,7 @@ Direction bindings saved by version 1.0 (`vf_up`…) are still read. Older `user
   - The name is sanitized: a trailing `.xml` is stripped and invalid characters are replaced.
   - The hint line shows the target path and warns when it will overwrite an existing file.
   - It saves to `<sequences folder>/<name>.xml`, and the sequence's `name` attribute is set to the file name.
-- Unsaved edits are shown with a `*` after the file name (`FILE: name.xml *`). Loading or recording another sequence discards them.
+- Unsaved edits are shown with a `*` after the file name (`name *` in the title). Loading or recording another sequence discards them.
 
 **Actions that stop other activity:** opening the Load menu, Save dialog or Settings menu, or changing the input mode, stops playback. A recording in progress is stopped and kept (or cancelled if only armed).
 
@@ -218,7 +218,7 @@ Edits the current sequence frame by frame, on the highway.
 **Entering and leaving**
 - Edit mode is toggled **only** by the pencil button in the toolbar. There is no controller or keyboard shortcut for it.
 - Entering stops playback and stops a recording (kept if started, cancelled if armed).
-- If there is no sequence, entering creates a new, empty one for the selected mode (`FILE: (unsaved sequence)`).
+- If there is no sequence, entering creates a new, empty one for the selected mode (title `Unsaved sequence`).
 - Entering is refused when the sequence's mode differs from the selected mode (see 2.1).
 - Changing the input mode leaves edit mode. Loading or recording another sequence while editing switches the editor to it, or leaves edit mode if it is for another mode.
 - While editing, RECORD and PLAY are disabled and their shortcuts do nothing. LOAD XML, SAVE, SAVE AS and SETTINGS still work.
@@ -313,7 +313,7 @@ Left to right:
 - Mode dropdown items: `VF MODE`, `SC2 MODE`, `SF MODE`.
 - Scores show `--` when there is no value yet.
 
-Below the toolbar: centered title **INPUT TRAINER: <MODE>** (e.g. `INPUT TRAINER: SC2 MODE`).
+Below the toolbar: centered title with the current file name, without `.xml` (with ` *` when there are unsaved edits), or `Unsaved recording`, `Unsaved sequence`, or `No sequence loaded`. The selected mode is shown by the Mode dropdown.
 
 ### 3.2 HUD
 
@@ -326,7 +326,6 @@ Below the toolbar: centered title **INPUT TRAINER: <MODE>** (e.g. `INPUT TRAINER
 - Status line at the bottom (load/save results, errors, hints)
 
 **Right column (info & timers)**
-- `FILE: <filename>.xml` (with ` *` when there are unsaved edits), or `(unsaved recording)`, `(unsaved sequence)`, or `-`
 - `TIME: X.XX s`
 - `FRAME: N f` (60 FPS)
 - Recording label, only while recording is active: `ARMED` / `first input starts recording` (two lines), then `RECORDING...`

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InputSequence name="SC2-iStand" author="Momokwai" mode="SC2" duration="1.717">
+    <Input timestamp="0.000" frame="0">
+        <Direction hold="0.500" holdFrames="30">DOWN</Direction>
+        <Buttons>
+            <Button hold="0.500" holdFrames="30">G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="0.500" frame="30">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.550" frame="33">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.167" frame="70">
+        <Direction hold="0.500" holdFrames="30">DOWN</Direction>
+        <Buttons>
+            <Button hold="0.500" holdFrames="30">G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="1.667" frame="100">
+        <Direction>BACK</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.717" frame="103">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+</InputSequence>

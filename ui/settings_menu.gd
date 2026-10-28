@@ -6,7 +6,8 @@ extends Control
 ## buttons and combinations of the selected input mode (rebuilt on open).
 ##
 ## Changes apply right away so they can be tried out. Save writes everything
-## to user://settings.cfg; Cancel (or Esc) goes back to the last saved state.
+## to settings.cfg (see UserSettings.settings_path()); Cancel (or Esc) goes
+## back to the last saved state.
 
 signal closed
 

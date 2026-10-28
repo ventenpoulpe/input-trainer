@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InputSequence name="SC2-G2_after_guard_break_10_then_30" author="Momokwai" mode="SC2" duration="2.467">
+    <Input timestamp="0.000" frame="0">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button hold="0.333" holdFrames="20">G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="0.333" frame="20">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.400" frame="24">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.433" frame="26">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button hold="0.300" holdFrames="18">G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="1.400" frame="84">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button hold="0.333" holdFrames="20">G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="2.067" frame="124">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.133" frame="128">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.167" frame="130">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button hold="0.300" holdFrames="18">G</Button>
+        </Buttons>
+    </Input>
+</InputSequence>

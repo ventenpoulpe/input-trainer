@@ -1,5 +1,6 @@
 extends Node
-## All user settings in one ConfigFile: user://settings.cfg.
+## All user settings in one ConfigFile: settings.cfg, next to the executable
+## in exported games (user://settings.cfg when run from the editor).
 ## Autoloaded first as `UserSettings` so other autoloads can read it.
 ##
 ## Sections:
@@ -11,7 +12,7 @@ extends Node
 
 signal preferences_changed
 
-const PATH := "user://settings.cfg"
+const FILE_NAME := "settings.cfg"
 const PREFERENCE_DEFAULTS := {
 	"audio": {
 		"sfx_volume": 0.8,  # 0..1
@@ -22,11 +23,21 @@ const PREFERENCE_DEFAULTS := {
 		"facing_right": true,  # player 1 side
 	},
 }
-## Files used before settings.cfg; imported once if settings.cfg is missing.
+## Files used before; imported once if settings.cfg is missing.
+## Exported games used to keep settings.cfg in the user data folder.
+const OLD_USER_PATH := "user://settings.cfg"
 const OLD_CONTROLS_PATH := "user://controls.cfg"
 const OLD_DEVICE_PATH := "user://device.cfg"
 
 var _cfg := ConfigFile.new()
+
+
+## user:// when run from the editor. Exported games keep the file next to the
+## executable, like the Sequences folder, so the game stays portable.
+static func settings_path() -> String:
+	if OS.has_feature("editor"):
+		return "user://" + FILE_NAME
+	return OS.get_executable_path().get_base_dir().path_join(FILE_NAME)
 
 
 func _init() -> void:
@@ -36,15 +47,16 @@ func _init() -> void:
 ## Re-reads the file, dropping unsaved changes.
 func reload() -> void:
 	_cfg = ConfigFile.new()
-	if _cfg.load(PATH) != OK:
+	if _cfg.load(settings_path()) != OK:
 		_import_old_files()
 	preferences_changed.emit()
 
 
 func save() -> Error:
-	var err := _cfg.save(PATH)
+	var path := settings_path()
+	var err := _cfg.save(path)
 	if err != OK:
-		push_error("Could not save %s: %s" % [PATH, error_string(err)])
+		push_error("Could not save %s: %s" % [path, error_string(err)])
 	return err
 
 
@@ -77,6 +89,10 @@ func reset_preferences() -> void:
 
 
 func _import_old_files() -> void:
+	if settings_path() != OLD_USER_PATH and _cfg.load(OLD_USER_PATH) == OK:
+		save()
+		return
+	_cfg = ConfigFile.new()
 	var imported := false
 	var controls := ConfigFile.new()
 	if controls.load(OLD_CONTROLS_PATH) == OK:

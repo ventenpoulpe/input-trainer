@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://dnr52vomblld0"]
+[gd_scene load_steps=16 format=3 uid="uid://dnr52vomblld0"]
 
 [ext_resource type="Script" uid="uid://yb5yw8wfo61i" path="res://main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://bh3ksq3wphbcf" path="res://ui/device_selector.gd" id="2_device"]
@@ -8,6 +8,13 @@
 [ext_resource type="Script" path="res://ui/mode_selector.gd" id="6_mode"]
 [ext_resource type="Script" path="res://sequence/sequence_editor.gd" id="7_editor"]
 [ext_resource type="Texture2D" path="res://ui/icons/edit.svg" id="8_edit_icon"]
+[ext_resource type="Texture2D" path="res://ui/icons/load.svg" id="9_load_icon"]
+[ext_resource type="Texture2D" path="res://ui/icons/record.svg" id="10_record_icon"]
+[ext_resource type="Texture2D" path="res://ui/icons/save.svg" id="11_save_icon"]
+[ext_resource type="Texture2D" path="res://ui/icons/save_as.svg" id="12_save_as_icon"]
+[ext_resource type="Texture2D" path="res://ui/icons/play.svg" id="13_play_icon"]
+[ext_resource type="Texture2D" path="res://ui/icons/settings.svg" id="14_settings_icon"]
+[ext_resource type="Texture2D" path="res://ui/icons/clear.svg" id="15_clear_icon"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -60,45 +67,67 @@ theme_override_constants/separation = 8
 
 [node name="LoadXmlButton" type="MenuButton" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-text = "LOAD XML ▾"
+tooltip_text = "Load a sequence (XML file)"
+text = "▾"
+icon = ExtResource("9_load_icon")
 flat = false
 
 [node name="RecordButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(190, 0)
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
+tooltip_text = "Record"
 focus_mode = 0
-text = "RECORD (START/STOP)"
+icon = ExtResource("10_record_icon")
+icon_alignment = 1
 
 [node name="SaveButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 tooltip_text = "Save the changes to the current file"
 focus_mode = 0
-text = "SAVE"
+icon = ExtResource("11_save_icon")
+icon_alignment = 1
 
 [node name="SaveAsButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-tooltip_text = "Save to a new file in the Sequences folder"
+tooltip_text = "Save as: save to a new file in the Sequences folder"
 focus_mode = 0
-text = "SAVE AS"
+icon = ExtResource("12_save_as_icon")
+icon_alignment = 1
 
 [node name="PlayButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(170, 0)
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
+tooltip_text = "Play"
 focus_mode = 0
-text = "PLAY (START/STOP)"
+icon = ExtResource("13_play_icon")
+icon_alignment = 1
 
 [node name="EditButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 tooltip_text = "Edit mode: edit the sequence frame by frame"
 focus_mode = 0
 toggle_mode = true
 icon = ExtResource("8_edit_icon")
+icon_alignment = 1
+
+[node name="ClearButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+tooltip_text = "Clear all inputs (edit mode, Ctrl+Z to undo)"
+focus_mode = 0
+icon = ExtResource("15_clear_icon")
+icon_alignment = 1
 
 [node name="Separator" type="VSeparator" parent="Layout/TopBar/Margin/Toolbar"]
 layout_mode = 2
@@ -127,9 +156,12 @@ script = ExtResource("2_device")
 
 [node name="SettingsButton" type="Button" parent="Layout/TopBar/Margin/Toolbar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
+tooltip_text = "Settings and rebinding"
 focus_mode = 0
-text = "SETTINGS / REBIND"
+icon = ExtResource("14_settings_icon")
+icon_alignment = 1
 
 [node name="Spacer" type="Control" parent="Layout/TopBar/Margin/Toolbar"]
 layout_mode = 2
@@ -144,8 +176,9 @@ text = "BEST MATCH SCORE: --"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "INPUT TRAINER: VF MODE"
+text = "No sequence loaded"
 horizontal_alignment = 1
+text_overrun_behavior = 3
 
 [node name="BodyMargin" type="MarginContainer" parent="Layout"]
 layout_mode = 2
@@ -213,12 +246,6 @@ script = ExtResource("5_highway")
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 theme_override_constants/separation = 6
-
-[node name="FileLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "FILE: -"
-text_overrun_behavior = 3
 
 [node name="TimeLabel" type="Label" parent="Layout/BodyMargin/Body/Info"]
 unique_name_in_owner = true

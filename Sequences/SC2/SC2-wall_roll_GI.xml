@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InputSequence name="SC2-wall_roll_GI" author="Momokwai" mode="SC2" duration="2.550">
+    <Input timestamp="0.000" frame="0">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.017" frame="1">
+        <Direction>DOWN</Direction>
+        <Buttons>
+            <Button>G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="0.050" frame="3">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.833" frame="50">
+        <Direction>UP</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.850" frame="51">
+        <Direction>UP</Direction>
+        <Buttons>
+            <Button>G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="0.883" frame="53">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.667" frame="100">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.683" frame="101">
+        <Direction>DOWN</Direction>
+        <Buttons>
+            <Button>G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="1.717" frame="103">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.500" frame="150">
+        <Direction>UP</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.517" frame="151">
+        <Direction>UP</Direction>
+        <Buttons>
+            <Button>G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="2.550" frame="153">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+</InputSequence>

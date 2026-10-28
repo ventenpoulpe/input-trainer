@@ -6,7 +6,13 @@ const Rating := TimingJudge.Rating
 const RATING_SOUNDS := {
 	Rating.PERFECT: &"perfect", Rating.GREAT: &"great", Rating.GOOD: &"good", Rating.MISS: &"miss",
 }
-## LOAD XML menu ids (files use their index).
+## Toolbar icons that change with the record and play state.
+const ICON_RECORD := preload("res://ui/icons/record.svg")
+const ICON_RECORD_CANCEL := preload("res://ui/icons/record_cancel.svg")
+const ICON_RECORD_STOP := preload("res://ui/icons/record_stop.svg")
+const ICON_PLAY := preload("res://ui/icons/play.svg")
+const ICON_STOP := preload("res://ui/icons/stop.svg")
+## Load menu ids (files use their index).
 const MENU_BROWSE := 10_000
 const MENU_OPEN_FOLDER := 10_001
 
@@ -19,6 +25,7 @@ const MENU_OPEN_FOLDER := 10_001
 @onready var _save_button: Button = %SaveButton
 @onready var _save_as_button: Button = %SaveAsButton
 @onready var _edit_button: Button = %EditButton
+@onready var _clear_button: Button = %ClearButton
 @onready var _edit_label: Label = %EditLabel
 @onready var _edit_help_label: Label = %EditHelpLabel
 @onready var _play_button: Button = %PlayButton
@@ -29,7 +36,6 @@ const MENU_OPEN_FOLDER := 10_001
 @onready var _loop_label: Label = %LoopLabel
 @onready var _counts_label: Label = %CountsLabel
 @onready var _status_label: Label = %StatusLabel
-@onready var _file_label: Label = %FileLabel
 @onready var _time_label: Label = %TimeLabel
 @onready var _frame_label: Label = %FrameLabel
 @onready var _recording_label: Label = %RecordingLabel
@@ -38,7 +44,7 @@ const MENU_OPEN_FOLDER := 10_001
 
 var _load_dialog := FileDialog.new()
 var _save_dialog := SaveSequenceDialog.new()
-## Files listed in the LOAD XML menu, by menu id.
+## Files listed in the load menu, by menu id.
 var _menu_files: Array[String] = []
 
 
@@ -50,13 +56,15 @@ func _ready() -> void:
 	_save_button.pressed.connect(_save)
 	_save_as_button.pressed.connect(_open_save_dialog)
 	_edit_button.pressed.connect(_toggle_edit)
+	_clear_button.pressed.connect(_clear_inputs)
 	_editor.active_changed.connect(_on_edit_active_changed)
 	_editor.brush_changed.connect(func(_direction: String) -> void: _update_edit_help())
-	SequenceManager.sequence_edited.connect(_update_file_label)
+	SequenceManager.sequence_edited.connect(_update_title)
 	_play_button.pressed.connect(_toggle_play)
 	SequenceManager.recording_state_changed.connect(_on_recording_state_changed)
 	SequenceManager.sequence_changed.connect(_on_sequence_changed)
 	InputConfig.mode_changed.connect(_on_mode_changed)
+	InputConfig.bindings_changed.connect(_update_record_play_buttons)
 	_gameplay.state_changed.connect(_on_play_state_changed)
 	_gameplay.best_score_changed.connect(_on_best_score_changed)
 	_gameplay.input_judged.connect(func(target: TimingJudge.Target) -> void: Sfx.play(RATING_SOUNDS[target.rating]))
@@ -70,6 +78,7 @@ func _ready() -> void:
 	_on_recording_state_changed(SequenceManager.get_recording_state())
 	_on_sequence_changed()
 	_on_play_state_changed(_gameplay.state)
+	_update_record_play_buttons()
 	_on_best_score_changed(_gameplay.best_score)
 	_on_mode_changed(InputConfig.active_mode)
 	_on_edit_active_changed(false)
@@ -138,7 +147,7 @@ func _toggle_edit() -> void:
 		return
 	_stop_everything()
 	var error := _editor.start()
-	_set_status(error if error else "Edit mode: click the lanes to change inputs. SAVE keeps the changes.")
+	_set_status(error if error else "Edit mode: click the lanes to change inputs. Save to keep the changes.")
 	_edit_button.set_pressed_no_signal(_editor.active)
 
 
@@ -169,21 +178,34 @@ func _setup_load_dialog() -> void:
 	add_child(_load_dialog)
 
 
-## Rescans the sequences folder every time the LOAD XML menu opens.
+## Rescans the sequences folder every time the load menu opens.
+## Subfolders of the sequences folder become submenus, at any depth.
 func _populate_load_menu() -> void:
 	_stop_everything()
 	var popup := _load_menu.get_popup()
-	popup.clear()
-	_menu_files = SequenceManager.list_sequence_files()
+	popup.clear(true)  # also frees the folder submenus
+	_menu_files.clear()
+	_add_sequence_items(popup, SequenceManager.sequence_tree())
 	if _menu_files.is_empty():
 		popup.add_item("(no .xml files in %s)" % SequenceManager.sequences_dir())
 		popup.set_item_disabled(-1, true)
-	for i in _menu_files.size():
-		popup.add_radio_check_item(_menu_files[i].get_file().get_basename(), i)
-		popup.set_item_checked(-1, _menu_files[i] == SequenceManager.current_path)
 	popup.add_separator()
 	popup.add_item("Browse...", MENU_BROWSE)
 	popup.add_item("Open Sequences folder", MENU_OPEN_FOLDER)
+
+
+## Adds a folder's subfolders (as submenus) then its files to `menu`.
+## Item ids are indexes into _menu_files.
+func _add_sequence_items(menu: PopupMenu, tree: Dictionary) -> void:
+	for folder: Dictionary in tree.folders:
+		var submenu := PopupMenu.new()
+		submenu.id_pressed.connect(_on_load_menu_id_pressed)
+		_add_sequence_items(submenu, folder)
+		menu.add_submenu_node_item(folder.name, submenu)
+	for path: String in tree.files:
+		menu.add_radio_check_item(path.get_file().get_basename(), _menu_files.size())
+		menu.set_item_checked(-1, path == SequenceManager.current_path)
+		_menu_files.append(path)
 
 
 func _on_load_menu_id_pressed(id: int) -> void:
@@ -203,7 +225,8 @@ func _on_load_file_selected(path: String) -> void:
 	if error:
 		_set_status(error)
 	else:
-		_set_status("Loaded %s (%d inputs). Press PLAY (Space / L3)." % [path.get_file(), SequenceManager.current_sequence.inputs.size()])
+		_set_status("Loaded %s (%d inputs). Press Play (%s)." % [
+				path.get_file(), SequenceManager.current_sequence.inputs.size(), InputConfig.get_shortcut_text(&"app_play_toggle")])
 
 
 func _open_save_dialog() -> void:
@@ -243,7 +266,7 @@ func _update_stats() -> void:
 
 
 func _on_play_state_changed(state: GameplayController.State) -> void:
-	_play_button.text = "STOP" if state != GameplayController.State.STOPPED else "PLAY (START/STOP)"
+	_update_record_play_buttons()
 	if state == GameplayController.State.COUNTDOWN:
 		Sfx.play(&"ready")
 
@@ -260,22 +283,37 @@ func _on_best_score_changed(best: float) -> void:
 func _on_recording_state_changed(state: SequenceRecorder.State) -> void:
 	match state:
 		RecState.IDLE:
-			_record_button.text = "RECORD (START/STOP)"
 			_recording_label.hide()
 		RecState.ARMED:
-			_record_button.text = "CANCEL RECORD"
 			_recording_label.text = "ARMED\nfirst input starts recording"
 			_recording_label.show()
 			_show_time(0.0)
 			_set_status("Recording armed. Your first direction or button press is t = 0.")
 		RecState.RECORDING:
-			_record_button.text = "STOP RECORD"
 			_recording_label.text = "RECORDING..."
 			_recording_label.show()
+	_update_record_play_buttons()
 
 
-func _on_mode_changed(mode: String) -> void:
-	_title_label.text = "INPUT TRAINER: " + InputMode.title(mode)
+## Icons and tooltips (with the current shortcuts) of the record and play buttons.
+func _update_record_play_buttons() -> void:
+	var record_keys := InputConfig.get_shortcut_text(&"app_record_toggle")
+	match SequenceManager.get_recording_state():
+		RecState.ARMED:
+			_record_button.icon = ICON_RECORD_CANCEL
+			_record_button.tooltip_text = "Cancel recording (%s)" % record_keys
+		RecState.RECORDING:
+			_record_button.icon = ICON_RECORD_STOP
+			_record_button.tooltip_text = "Stop recording (%s)" % record_keys
+		_:
+			_record_button.icon = ICON_RECORD
+			_record_button.tooltip_text = "Record (%s)" % record_keys
+	var playing := _gameplay.state != GameplayController.State.STOPPED
+	_play_button.icon = ICON_STOP if playing else ICON_PLAY
+	_play_button.tooltip_text = "%s (%s)" % ["Stop" if playing else "Play", InputConfig.get_shortcut_text(&"app_play_toggle")]
+
+
+func _on_mode_changed(_mode: String) -> void:
 	_update_mode_warning()
 
 
@@ -291,7 +329,7 @@ func _update_mode_warning() -> void:
 
 func _on_sequence_changed() -> void:
 	_update_mode_warning()
-	_update_file_label()
+	_update_title()
 	var sequence := SequenceManager.current_sequence
 	if sequence == null:
 		_show_time(0.0)
@@ -302,26 +340,26 @@ func _on_sequence_changed() -> void:
 		if sequence.inputs.is_empty():
 			_set_status("New empty %s sequence: click the lanes to add inputs." % InputMode.title(sequence.mode))
 		else:
-			_set_status("Recorded %d inputs (%.2f s). Press PLAY to practice or SAVE AS to keep it." % [
+			_set_status("Recorded %d inputs (%.2f s). Press Play to practice or Save as to keep it." % [
 				sequence.inputs.size(), sequence.duration,
 			])
 
 
-## FILE label, with a * when there are unsaved edits.
-func _update_file_label() -> void:
+## Title: the current file name, with a * when there are unsaved edits.
+func _update_title() -> void:
 	var sequence := SequenceManager.current_sequence
 	_save_button.disabled = sequence == null
 	_save_as_button.disabled = sequence == null
 	if sequence == null:
-		_file_label.text = "FILE: -"
+		_title_label.text = "No sequence loaded"
 		return
 	var path := SequenceManager.current_path
 	if path:
-		_file_label.text = "FILE: " + path.get_file() + (" *" if SequenceManager.has_unsaved_edits else "")
+		_title_label.text = path.get_file().get_basename() + (" *" if SequenceManager.has_unsaved_edits else "")
 	elif SequenceManager.has_unsaved_edits or sequence.inputs.is_empty():
-		_file_label.text = "FILE: (unsaved sequence)"
+		_title_label.text = "Unsaved sequence"
 	else:
-		_file_label.text = "FILE: (unsaved recording)"
+		_title_label.text = "Unsaved recording"
 
 
 # --- Edit mode -----------------------------------------------------------------
@@ -332,9 +370,15 @@ func _on_edit_active_changed(is_active: bool) -> void:
 	_edit_help_label.visible = is_active
 	_record_button.disabled = is_active
 	_play_button.disabled = is_active
+	_clear_button.disabled = not is_active
 	_update_edit_help()
 	if not is_active and SequenceManager.current_sequence:
 		_show_time(SequenceManager.current_sequence.duration)
+
+
+func _clear_inputs() -> void:
+	_editor.clear_all()
+	_set_status("Cleared all inputs. Ctrl+Z to undo, Save to keep it.")
 
 
 func _update_edit_help() -> void:
@@ -344,7 +388,7 @@ func _update_edit_help() -> void:
 		"Drag: hold over several frames",
 		"Right-click (drag): clear",
 		"Direction lane: click paints the brush, click again for neutral",
-		"Brush: %d %s (keys 1-9 or click the joystick)" % [digit, _editor.brush],
+		"Brush: %d %s (keys 1-9 or click the joystick icon)" % [digit, _editor.brush],
 		"Wheel / Up / Down: scroll (Shift / PgUp / PgDn: 10 frames)",
 		"Ctrl+Wheel: zoom   Home / End: start / end",
 		"E: end the sequence at the cursor frame",

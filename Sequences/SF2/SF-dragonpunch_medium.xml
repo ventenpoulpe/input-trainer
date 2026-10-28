@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InputSequence name="SF-dragonpunch_medium" author="Momokwai" mode="SF" duration="0.317">
+    <Input timestamp="0.217" frame="13">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.233" frame="14">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.250" frame="15">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.267" frame="16">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.283" frame="17">
+        <Direction>DOWN_FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.300" frame="18">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button>MP</Button>
+        </Buttons>
+    </Input>
+</InputSequence>

@@ -179,6 +179,15 @@ func get_binding_text(kind: Kind, action: StringName) -> String:
 	return event_to_text(get_binding(kind, action))
 
 
+## Keyboard and controller bindings as "Space / L3", for hints and tooltips.
+func get_shortcut_text(action: StringName) -> String:
+	var texts := PackedStringArray()
+	for kind: Kind in [Kind.KEYBOARD, Kind.JOYPAD]:
+		if get_binding(kind, action) != null:
+			texts.append(get_binding_text(kind, action))
+	return " / ".join(texts)
+
+
 ## Binds `event` to `action`. If another action already used that input, the
 ## two swap bindings; the other action's name is returned (or &"" if none).
 ## Only actions that can be live at the same time are checked: the shared

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InputSequence name="SF6-2MK_DRIVERUSH_THROW_LOL" author="Momokwai" mode="SF" duration="0.667">
+    <Input timestamp="0.083" frame="5">
+        <Direction>DOWN_BACK</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.167" frame="10">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.183" frame="11">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.200" frame="12">
+        <Direction>FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.217" frame="13">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.233" frame="14">
+        <Direction>DOWN_FORWARD</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.250" frame="15">
+        <Direction>DOWN_FORWARD</Direction>
+        <Buttons>
+            <Button>LK</Button>
+            <Button>MK</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="0.267" frame="16">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.333" frame="20">
+        <Direction hold="0.333" holdFrames="20">DOWN_BACK</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.667" frame="40">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+</InputSequence>

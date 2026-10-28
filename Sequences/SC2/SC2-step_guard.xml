@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InputSequence name="SC2-step_guard" author="Momokwai" mode="SC2" duration="2.400">
+    <Input timestamp="0.000" frame="0">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.067" frame="4">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.100" frame="6">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button hold="0.300" holdFrames="18">G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="0.667" frame="40">
+        <Direction>UP</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.733" frame="44">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="0.767" frame="46">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button hold="0.300" holdFrames="18">G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="1.333" frame="80">
+        <Direction>DOWN</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.400" frame="84">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="1.433" frame="86">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button hold="0.300" holdFrames="18">G</Button>
+        </Buttons>
+    </Input>
+    <Input timestamp="2.000" frame="120">
+        <Direction>UP</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.067" frame="124">
+        <Direction>NEUTRAL</Direction>
+        <Buttons></Buttons>
+    </Input>
+    <Input timestamp="2.100" frame="126">
+        <Direction>NEUTRAL</Direction>
+        <Buttons>
+            <Button hold="0.300" holdFrames="18">G</Button>
+        </Buttons>
+    </Input>
+</InputSequence>

@@ -166,6 +166,18 @@ func set_end(frame: int) -> void:
 	_commit()
 
 
+## Removes every input, leaving an empty sequence (undoable).
+func clear_all() -> void:
+	if not active:
+		return
+	end_stroke()
+	_push_undo()
+	grid = SequenceGrid.new(grid.mode)
+	grid.ensure_frames(1)
+	view_frame = 0
+	_commit()
+
+
 func undo() -> void:
 	if not active or _undo.is_empty():
 		return

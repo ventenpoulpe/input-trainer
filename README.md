@@ -44,7 +44,7 @@ Requires Windows 10 or 11 and a reasonably recent graphics driver (the app uses 
 
 ### Your first practice session
 
-1. Check that **Mode** in the toolbar is set to **VF MODE** (the default), then click **LOAD XML ▾** and pick the included sample `VF5R-JEA-BNB-6K`.
+1. Check that **Mode** in the toolbar is set to **VF MODE** (the default), then click the **Load** button (<img src="ui/icons/load.svg" width="20" alt="Load">, first in the toolbar), open the `VF5R` folder and pick the included sample `VF5R-JEA-BNB-6K`.
 2. Press **Space** (keyboard) or **L3** (controller) to start.
 3. After a short countdown, hit each input as it crosses the line at the bottom of the track.
 4. Press **Space** / **L3** again to stop.
@@ -53,8 +53,8 @@ Requires Windows 10 or 11 and a reasonably recent graphics driver (the app uses 
 
 | File | Mode | What it is |
 |---|---|---|
-| `VF5R-JEA-BNB-6K` | VF | A Jean Kujo bread-and-butter combo starting with 6K (Virtua Fighter 5 R.E.V.O.) |
-| `SF3-EVO2004-Daigo-Parry` | SF | Daigo's famous EVO 2004 parry of Chun-Li's super, then his punish combo into Shippu Jinrai-kyaku. The timing is reconstructed by hand, so it's close but not frame data from the match. |
+| `VF5R/VF5R-JEA-BNB-6K` | VF | A Jean Kujo bread-and-butter combo starting with 6K (Virtua Fighter 5 R.E.V.O.) |
+| `SF3/SF3-EVO2004-Daigo-Parry` | SF | Daigo's famous EVO 2004 parry of Chun-Li's super, then his punish combo into Shippu Jinrai-kyaku. The timing is reconstructed by hand, so it's close but not frame data from the match. |
 
 Switch **Mode** to **SF MODE** before loading the Daigo sequence.
 
@@ -62,9 +62,26 @@ Switch **Mode** to **SF MODE** before loading the Daigo sequence.
 
 ## How to use it
 
+### The toolbar
+
+The toolbar buttons are icons. Hover over one to see what it does and its shortcut.
+
+| Icon | Button | What it does |
+|---|---|---|
+| <img src="ui/icons/load.svg" width="20" alt="Load"> | **Load** | Opens the list of sequences in the `Sequences` folder, plus **Browse...** and **Open Sequences folder** |
+| <img src="ui/icons/record.svg" width="20" alt="Record"> | **Record** | Arms a recording (**Backspace** / **R3**). While armed it shows <img src="ui/icons/record_cancel.svg" width="20" alt="Cancel"> to cancel, and <img src="ui/icons/record_stop.svg" width="20" alt="Stop"> to stop once recording |
+| <img src="ui/icons/save.svg" width="20" alt="Save"> | **Save** | Saves the changes to the current file |
+| <img src="ui/icons/save_as.svg" width="20" alt="Save as"> | **Save as** | Saves to a new file in the `Sequences` folder |
+| <img src="ui/icons/play.svg" width="20" alt="Play"> | **Play** | Starts practicing (**Space** / **L3**). Shows <img src="ui/icons/stop.svg" width="20" alt="Stop"> while playing: click it to stop |
+| <img src="ui/icons/edit.svg" width="20" alt="Edit"> | **Edit** | Turns frame-by-frame edit mode on or off |
+| <img src="ui/icons/clear.svg" width="20" alt="Clear"> | **Clear** | In edit mode: removes every input of the sequence (**Ctrl+Z** brings them back) |
+| <img src="ui/icons/settings.svg" width="20" alt="Settings"> | **Settings** | Rebinding, sound and gameplay settings |
+
+The **Mode** and **Device** dropdowns sit between **Clear** and **Settings**, and your best score is on the right.
+
 ### Choosing an input mode
 
-Pick your game in the **Mode** dropdown in the toolbar. The highway, the title and the buttons you use change right away, and your choice is remembered.
+Pick your game in the **Mode** dropdown in the toolbar. The highway and the buttons you use change right away, and your choice is remembered.
 
 | Mode | Game | Buttons |
 |---|---|---|
@@ -80,18 +97,18 @@ Each sequence file remembers the mode it was recorded in. If you load a sequence
 
 ### Recording a sequence
 
-1. Press **Backspace** (keyboard) or **R3** (controller), or click **RECORD**.
+1. Press **Backspace** (keyboard) or **R3** (controller), or click **Record** (<img src="ui/icons/record.svg" width="20" alt="Record">).
    The screen shows **ARMED**: nothing is recorded yet.
 2. Perform your sequence. **Your first press is time zero.** The recording uses the current mode.
 3. Press **Backspace** / **R3** again to stop.
-4. Click **SAVE AS**, give it a name, and it's saved to the `Sequences` folder.
-   After that, **SAVE** overwrites the same file.
+4. Click **Save as** (<img src="ui/icons/save_as.svg" width="20" alt="Save as">), give it a name, and it's saved to the `Sequences` folder.
+   After that, **Save** (<img src="ui/icons/save.svg" width="20" alt="Save">) overwrites the same file.
 
 > Tip: pressing record while it's still armed cancels it.
 
 ### Editing a sequence frame by frame
 
-Click the **pencil** button in the toolbar to enter edit mode (click it again to leave). It edits the current sequence, or starts a new empty one if none is loaded. The highway then shows one row per frame (60 per second), and the row on the hit line is the **cursor**.
+Click the **Edit** button (<img src="ui/icons/edit.svg" width="20" alt="Edit">) in the toolbar to enter edit mode (click it again to leave). It edits the current sequence, or starts a new empty one if none is loaded. The highway then shows one row per frame (60 per second), and the row on the hit line is the **cursor**.
 
 ![Edit mode on the Daigo sequence: the dragon punch and super inputs, frame by frame](docs/screenshots/edit_mode.png)
 
@@ -106,15 +123,16 @@ Click the **pencil** button in the toolbar to enter edit mode (click it again to
 | Zoom | **Ctrl + mouse wheel** |
 | Jump to the start / end | **Home** / **End** |
 | End the sequence at the cursor | **E** |
+| Clear every input | **Clear** button (<img src="ui/icons/clear.svg" width="20" alt="Clear">) |
 | Undo / redo | **Ctrl+Z** / **Ctrl+Y** |
 
 - Presses and holds shorter than 15 frames are saved as plain taps, and they're drawn dimmer as a reminder.
-- Changes apply right away (a `*` appears after the file name). Click **SAVE** to keep them.
-- RECORD and PLAY are off while editing: leave edit mode to play your changes.
+- Changes apply right away (a `*` appears after the file name). Click **Save** (<img src="ui/icons/save.svg" width="20" alt="Save">) to keep them.
+- **Record** and **Play** are off while editing: leave edit mode to play your changes.
 
 ### Playing a sequence
 
-Press **Space** / **L3** or click **PLAY**. A 1-second countdown appears, then inputs start falling. When a loop ends you get your score, a short 0.5 s pause, and the next loop starts.
+Press **Space** / **L3** or click **Play** (<img src="ui/icons/play.svg" width="20" alt="Play">). A 1-second countdown appears, then inputs start falling. When a loop ends you get your score, a short 0.5 s pause, and the next loop starts.
 
 ### Reading the screen
 
@@ -130,6 +148,7 @@ The first lane is always the **direction** lane: press the direction shown by th
 
 - **Long bars** behind an input are **holds**: keep the input down until the bar ends.
 - The circles on the hit line light up with what you're currently holding, which is handy for checking your inputs. A combination button lights up all of its buttons.
+- The title at the top shows the loaded file's name (with a `*` when there are unsaved changes).
 - **TIME** and **FRAME** (60 FPS) on the right show where you are in the sequence.
 
 ### Scoring
@@ -151,7 +170,7 @@ Your **best score** resets when you load or record a different sequence.
 
 ## Controls
 
-All bindings can be changed in **SETTINGS / REBIND**.
+All bindings can be changed in **Settings** (<img src="ui/icons/settings.svg" width="20" alt="Settings">).
 
 **All modes**
 
@@ -205,7 +224,7 @@ Controller buttons use Xbox names (A = bottom face button). The keyboard shortcu
 
 ### Rebinding
 
-1. Select the mode you want to change in the **Mode** dropdown, then open **SETTINGS / REBIND**.
+1. Select the mode you want to change in the **Mode** dropdown, then open **Settings** (<img src="ui/icons/settings.svg" width="20" alt="Settings">).
    The menu shows the directions, that mode's buttons and combinations, and the shortcuts.
 
    ![The settings menu in VF mode](docs/screenshots/settings_vf.png)
@@ -223,7 +242,7 @@ Controller buttons use Xbox names (A = bottom face button). The keyboard shortcu
 | Input scroll time | How long inputs take to reach the hit line (lower = faster) | 1.2 s |
 | Side | Player 1 (facing right) or Player 2 (facing left) | Player 1 |
 
-Settings are saved in Godot's user data folder (`user://settings.cfg`).
+Settings are saved in `settings.cfg`, next to the executable (like the `Sequences` folder). Settings from older versions, kept in Godot's user data folder, are imported on first launch.
 
 ---
 
@@ -234,7 +253,9 @@ Sequences are stored in the `Sequences` folder:
 - When running from the Godot editor: `Sequences/` inside the project.
 - In an exported build: a `Sequences` folder next to the executable.
 
-The **LOAD XML ▾** menu lists every file in that folder, and also has **Browse...** and **Open Sequences folder**.
+The **Load** menu (<img src="ui/icons/load.svg" width="20" alt="Load">) lists every file in that folder, and also has **Browse...** and **Open Sequences folder**.
+
+You can organize the folder with subfolders, as deep as you like (for example `VF5R/`, `SC2/`, `SF/SF3/`, `SF/SF6/`). Each subfolder shows up as a submenu in the **Load** menu, folders first, then files. Empty folders, and folders whose name starts with a dot, are hidden. **Save as** always saves to the top of the `Sequences` folder; move the file into a subfolder afterwards if you want.
 
 ### File format
 
@@ -275,9 +296,18 @@ sequence/      Input modes, sequence data, recorder, frame editor and XML reader
 ui/            Highway, countdown, mode and device selectors, save dialog, settings menu
 Sequences/     Sequence XML files
 docs/          README screenshots
+tools/         Screenshot capture scene that retakes the README screenshots
 main.tscn      Main screen
 export_presets.cfg  Godot export settings
 specs.md       Full technical and functional specification
 ```
 
 See [specs.md](specs.md) for the full specification.
+
+To retake the README screenshots after a UI change, run from the project folder:
+
+```
+Godot.exe --path . --resolution 1600x900 res://tools/capture_screenshots.tscn
+```
+
+It sets up each shot (a bot plays the sequences, so every hit is PERFECT), saves the PNGs to `docs/screenshots/`, and puts your input mode and device back afterwards.
