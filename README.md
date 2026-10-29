@@ -4,7 +4,7 @@ A rhythm-game style trainer for practicing fighting game execution, with input m
 
 Record a combo (or load one), then play it back Guitar Hero style: your inputs scroll down a highway and you press them in time. Every press is judged to the frame, so you can see exactly how early or late you are and drill until it's consistent.
 
-Built with **Godot 4.7**.
+Built with **Godot 4.7**. Improved and tested with **Claude Code**.
 
 ![Practicing Daigo's EVO 2004 parry sequence in SF mode](docs/screenshots/mode_sf.png)
 
