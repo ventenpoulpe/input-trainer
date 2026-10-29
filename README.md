@@ -303,11 +303,3 @@ specs.md       Full technical and functional specification
 ```
 
 See [specs.md](specs.md) for the full specification.
-
-To retake the README screenshots after a UI change, run from the project folder:
-
-```
-Godot.exe --path . --resolution 1600x900 res://tools/capture_screenshots.tscn
-```
-
-It sets up each shot (a bot plays the sequences, so every hit is PERFECT), saves the PNGs to `docs/screenshots/`, and puts your input mode and device back afterwards.
