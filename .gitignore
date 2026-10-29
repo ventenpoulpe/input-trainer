@@ -8,3 +8,6 @@ builds/
 
 # Personal Claude Code settings
 .claude/settings.local.json
+
+# Personal editor settings (contain local paths)
+.vscode/
