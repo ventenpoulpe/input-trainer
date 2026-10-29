@@ -32,10 +32,10 @@ Built with **Godot 4.7**. Improved and tested with **Claude Code**.
 
 1. Download the latest version from [Releases](https://github.com/ventenpoulpe/input-trainer/releases).
 2. Unzip the archive you've downloaded to the folder of your choice.
-   Avoid `C:\Program Files`, since the app saves your recordings next to the `.exe`.
+   **On Windows:** Avoid `C:\Program Files`, since the app saves your recordings next to the `.exe`.
 3. Make sure to leave the **Sequences/** folder in the same folder as the exe file.
 
-Requires Windows 10 or 11 and a reasonably recent graphics driver (the app uses Direct3D 12).
+Requires Windows 10 or 11, or Linux with x64, and Direct3D 12.
 
 > [!WARNING]
 > **"Windows protected your PC"**
